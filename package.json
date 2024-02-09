@@ -1,9 +1,13 @@
 {
     "name": "@mirite/zod-to-mongoose",
     "version": "0.0.1",
-    "description": "Package for creating mongoose schemas out of Zod schemas for type safety",
+    "description": "Package for creating mongoose schemas out of Zod schemas for type safety, and removing duplicate effort.",
     "types": "dist/index.d.ts",
     "type": "module",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/mirite/zod-to-mongoose.git"
+    },
     "files": [
         "dist"
     ],
@@ -18,6 +22,14 @@
         "email": "me@jesseconner.ca",
         "url": "https://jesseconner.ca"
     },
+    "keywords": [
+        "zod",
+        "mongoose",
+        "schema",
+        "type",
+        "type-safe"
+    ],
+    "issues": "https://github.com/mirite/zod-to-mongoose/issues",
     "license": "MIT",
     "scripts": {
         "build": "tsup",
