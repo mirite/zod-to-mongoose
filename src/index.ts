@@ -1,6 +1,7 @@
-import { z, ZodObject, ZodRawShape } from "zod";
+import { ZodObject, ZodRawShape } from "zod";
 import * as Mongoose from "mongoose";
 import { SchemaDefinition } from "mongoose";
+import type { Field, FieldDefinition } from "./types";
 
 export function createSchema<T extends ZodRawShape>(
     zodObject: ZodObject<T>,
@@ -37,7 +38,8 @@ export function createSchema<T extends ZodRawShape>(
  */
 function convertField<T>(type: string, zodField: T[Extract<keyof T, string>]) {
     if (!hasTypeName(zodField)) throw new Error(`Unsupported type in field: ${type}`);
-    switch (zodField._def.typeName) {
+    const unwrappedData = unwrapType(zodField);
+    switch (unwrappedData.definition.typeName) {
         case "ZodString":
             return String;
         case "ZodNumber":
@@ -57,8 +59,8 @@ function convertField<T>(type: string, zodField: T[Extract<keyof T, string>]) {
  * @param zodField The Zod field to check
  * @returns Whether the Zod field has a _def property
  */
-function hasDef<T>(zodField: T[Extract<keyof T, string>]): zodField is T[Extract<keyof T, string>] & { _def: object } {
-    return zodField && typeof zodField === "object" && "_def" in zodField;
+function hasDef(zodField: unknown): zodField is { _def: object } {
+    return !!(zodField && typeof zodField === "object" && "_def" in zodField);
 }
 
 /**
@@ -67,8 +69,16 @@ function hasDef<T>(zodField: T[Extract<keyof T, string>]): zodField is T[Extract
  * @param zodField The Zod field to check
  * @returns Whether the Zod field has a typeName property
  */
-function hasTypeName<T>(
-    zodField: T[Extract<keyof T, string>],
-): zodField is T[Extract<keyof T, string>] & { _def: { typeName: string } } {
+function hasTypeName(zodField: unknown): zodField is Field {
     return hasDef(zodField) && "typeName" in zodField._def;
+}
+
+const primitiveTypes = ["ZodString", "ZodNumber", "ZodBoolean", "ZodDate"];
+/** @param data */
+function unwrapType(data: Field): { definition: FieldDefinition; defaultValue?: unknown } {
+    if (primitiveTypes.includes(data._def.typeName)) {
+        return { definition: data._def };
+    }
+    const defaultValue = data.defaultValue ? data.defaultValue() : undefined;
+    return { definition: data._def, defaultValue };
 }
