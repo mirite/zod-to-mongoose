@@ -1,4 +1,14 @@
-import { ZodObject, ZodRawShape } from "zod";
+import {
+    ZodBoolean,
+    ZodDate,
+    ZodDefault,
+    ZodNumber,
+    ZodObject,
+    ZodRawShape,
+    ZodString,
+    ZodTypeAny,
+    ZodUnion,
+} from "zod";
 import * as Mongoose from "mongoose";
 import { SchemaDefinition } from "mongoose";
 import type { Field, FieldDefinition } from "./types";
@@ -39,7 +49,7 @@ export function createSchema<T extends ZodRawShape>(
 function convertField<T>(type: string, zodField: T[Extract<keyof T, string>]) {
     if (!hasTypeName(zodField)) throw new Error(`Unsupported type in field: ${type}`);
     const unwrappedData = unwrapType(zodField);
-    switch (unwrappedData.definition.typeName) {
+    switch (unwrappedData.definition._def.typeName) {
         case "ZodString":
             return String;
         case "ZodNumber":
@@ -69,16 +79,23 @@ function hasDef(zodField: unknown): zodField is { _def: object } {
  * @param zodField The Zod field to check
  * @returns Whether the Zod field has a typeName property
  */
-function hasTypeName(zodField: unknown): zodField is Field {
+function hasTypeName(zodField: unknown): zodField is SupportedType {
     return hasDef(zodField) && "typeName" in zodField._def;
 }
 
-const primitiveTypes = ["ZodString", "ZodNumber", "ZodBoolean", "ZodDate"];
+type SupportedPrimitive = ZodString | ZodNumber | ZodBoolean | ZodDate;
+type SupportedType = SupportedPrimitive | ZodDefault<ZodTypeAny> | ZodObject<ZodRawShape> | ZodUnion<never>;
+
 /** @param data */
-function unwrapType(data: Field): { definition: FieldDefinition; defaultValue?: unknown } {
-    if (primitiveTypes.includes(data._def.typeName)) {
-        return { definition: data._def };
+function unwrapType(data: SupportedType): { definition: SupportedType; defaultValue?: unknown } {
+    if (!("innerType" in data._def)) {
+        return { definition: data };
     }
-    const defaultValue = data.defaultValue ? data.defaultValue() : undefined;
-    return { definition: data._def, defaultValue };
+    const subType = data._def.innerType;
+    let defaultValue = undefined;
+    if ("defaultValue" in subType) {
+        // @ts-ignore
+        defaultValue = subType.defaultValue();
+    }
+    return { definition: subType, defaultValue };
 }
