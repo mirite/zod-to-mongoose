@@ -11,10 +11,10 @@ import {
 } from "zod";
 import * as Mongoose from "mongoose";
 import { SchemaDefinition } from "mongoose";
-import type { Field, FieldDefinition } from "./types";
 
 export function createSchema<T extends ZodRawShape>(
     zodObject: ZodObject<T>,
+    modelName: string,
     connection: Mongoose.Connection,
 ): { schema: Mongoose.Schema; model: Mongoose.Model<T> };
 export function createSchema<T extends ZodRawShape>(zodObject: ZodObject<T>): Mongoose.Schema;
@@ -22,11 +22,13 @@ export function createSchema<T extends ZodRawShape>(zodObject: ZodObject<T>): Mo
  * Create a Mongoose schema from a Zod shape
  *
  * @param zodObject The Zod shape to create the schema from
+ * @param modelName The unique name to assign to the model
  * @param connection The Mongoose connection to create the model from
  * @returns The Mongoose schema
  */
 export function createSchema<T extends ZodRawShape>(
     zodObject: ZodObject<T>,
+    modelName?: string,
     connection?: Mongoose.Connection,
 ): Mongoose.Schema | { schema: Mongoose.Schema; model: Mongoose.Model<T> } {
     const convertedShape: Partial<SchemaDefinition> = {};
@@ -35,8 +37,8 @@ export function createSchema<T extends ZodRawShape>(
         convertedShape[key] = convertField(key, zodField);
     }
     const schema = new Mongoose.Schema(convertedShape);
-    if (!connection) return schema;
-    return { schema, model: connection.model<T>("test", schema) };
+    if (!connection || !modelName) return schema;
+    return { schema, model: connection.model<T>(modelName, schema) };
 }
 
 /**
@@ -49,18 +51,31 @@ export function createSchema<T extends ZodRawShape>(
 function convertField<T>(type: string, zodField: T[Extract<keyof T, string>]) {
     if (!hasTypeName(zodField)) throw new Error(`Unsupported type in field: ${type}`);
     const unwrappedData = unwrapType(zodField);
+    let coreType;
     switch (unwrappedData.definition._def.typeName) {
         case "ZodString":
-            return String;
+            coreType = String;
+            break;
         case "ZodNumber":
-            return Number;
+            coreType = Number;
+            break;
         case "ZodBoolean":
-            return Boolean;
+            coreType = Boolean;
+            break;
         case "ZodDate":
-            return Date;
+            coreType = Date;
+            break;
         default:
             throw new Error(`Unsupported type: ${type}`);
     }
+
+    if (!unwrappedData.defaultValue) {
+        return coreType;
+    }
+    return {
+        type: coreType,
+        default: unwrappedData.defaultValue,
+    };
 }
 
 /**
@@ -86,16 +101,20 @@ function hasTypeName(zodField: unknown): zodField is SupportedType {
 type SupportedPrimitive = ZodString | ZodNumber | ZodBoolean | ZodDate;
 type SupportedType = SupportedPrimitive | ZodDefault<ZodTypeAny> | ZodObject<ZodRawShape> | ZodUnion<never>;
 
-/** @param data */
+/**
+ * Takes a complex type and returns the inner type definition along with the default if present.
+ *
+ * @param data The type data to unwrap.
+ * @returns The inner type data along with the default if present.
+ */
 function unwrapType(data: SupportedType): { definition: SupportedType; defaultValue?: unknown } {
     if (!("innerType" in data._def)) {
         return { definition: data };
     }
     const subType = data._def.innerType;
     let defaultValue = undefined;
-    if ("defaultValue" in subType) {
-        // @ts-ignore
-        defaultValue = subType.defaultValue();
+    if ("defaultValue" in data._def) {
+        defaultValue = data._def.defaultValue();
     }
     return { definition: subType, defaultValue };
 }

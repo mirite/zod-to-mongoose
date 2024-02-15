@@ -16,6 +16,7 @@ describe("Creating schema", () => {
                 isHappy: z.boolean(),
                 birthday: z.date(),
             }),
+            "flat",
             connection,
         );
         expect(schema).toBeDefined();
@@ -32,11 +33,12 @@ describe("Creating schema", () => {
     it("should create a schema from an object with default values", async () => {
         const { schema, model } = createSchema(
             z.object({
-                name: z.string().default(""),
+                name: z.string().default("Bob"),
                 age: z.number().default(3),
                 isHappy: z.boolean(),
                 birthday: z.date(),
             }),
+            "defaults",
             connection,
         );
         expect(schema).toBeDefined();
@@ -46,7 +48,7 @@ describe("Creating schema", () => {
             birthday: new Date("1980-01-01"),
         });
         expect(result.age).toBe(3);
-        expect(result.name).toBe("");
+        expect(result.name).toBe("Bob");
     });
 
     afterAll(() => {
