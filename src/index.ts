@@ -1,16 +1,7 @@
-import {
-    ZodBoolean,
-    ZodDate,
-    ZodDefault,
-    ZodNumber,
-    ZodObject,
-    ZodRawShape,
-    ZodString,
-    ZodTypeAny,
-    ZodUnion,
-} from "zod";
+import { ZodObject, ZodRawShape } from "zod";
 import * as Mongoose from "mongoose";
 import { SchemaDefinition } from "mongoose";
+import { SupportedType } from "./types";
 
 export function createSchema<T extends ZodRawShape>(
     zodObject: ZodObject<T>,
@@ -48,8 +39,7 @@ export function createSchema<T extends ZodRawShape>(
  * @param zodField The Zod field to convert
  * @returns The Mongoose type
  */
-function convertField<T>(type: string, zodField: T[Extract<keyof T, string>]) {
-    if (!hasTypeName(zodField)) throw new Error(`Unsupported type in field: ${type}`);
+function convertField<T extends ZodRawShape>(type: string, zodField: T[Extract<keyof T, string>]) {
     const unwrappedData = unwrapType(zodField);
     let coreType;
     switch (unwrappedData.definition._def.typeName) {
@@ -79,42 +69,20 @@ function convertField<T>(type: string, zodField: T[Extract<keyof T, string>]) {
 }
 
 /**
- * Check if a Zod field has a _def property
- *
- * @param zodField The Zod field to check
- * @returns Whether the Zod field has a _def property
- */
-function hasDef(zodField: unknown): zodField is { _def: object } {
-    return !!(zodField && typeof zodField === "object" && "_def" in zodField);
-}
-
-/**
- * Check if a Zod field has a typeName property
- *
- * @param zodField The Zod field to check
- * @returns Whether the Zod field has a typeName property
- */
-function hasTypeName(zodField: unknown): zodField is SupportedType {
-    return hasDef(zodField) && "typeName" in zodField._def;
-}
-
-type SupportedPrimitive = ZodString | ZodNumber | ZodBoolean | ZodDate;
-type SupportedType = SupportedPrimitive | ZodDefault<ZodTypeAny> | ZodObject<ZodRawShape> | ZodUnion<never>;
-
-/**
  * Takes a complex type and returns the inner type definition along with the default if present.
  *
  * @param data The type data to unwrap.
  * @returns The inner type data along with the default if present.
  */
-function unwrapType(data: SupportedType): { definition: SupportedType; defaultValue?: unknown } {
-    if (!("innerType" in data._def)) {
-        return { definition: data };
-    }
-    const subType = data._def.innerType;
+function unwrapType(data: SupportedType): { definition: SupportedType; optional: boolean; defaultValue?: unknown } {
+    let definition = data;
+    const optional = false;
     let defaultValue = undefined;
-    if ("defaultValue" in data._def) {
-        defaultValue = data._def.defaultValue();
+    while ("innerType" in definition._def) {
+        if ("defaultValue" in definition._def) {
+            defaultValue = definition._def.defaultValue();
+        }
+        definition = definition._def.innerType;
     }
-    return { definition: subType, defaultValue };
+    return { definition, optional, defaultValue };
 }

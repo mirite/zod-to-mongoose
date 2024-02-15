@@ -1,3 +1,15 @@
+import {
+    ZodBoolean,
+    ZodDate,
+    ZodDefault,
+    ZodNumber,
+    ZodObject,
+    ZodRawShape,
+    ZodString,
+    ZodTypeAny,
+    ZodUnion,
+} from "zod";
+
 export type Field = {
     _def: FieldDefinition;
     checks?: Array<Check>;
@@ -11,3 +23,5 @@ export type FieldDefinition = {
 };
 
 export type Check = "";
+type SupportedPrimitive = ZodString | ZodNumber | ZodBoolean | ZodDate;
+export type SupportedType = SupportedPrimitive | ZodDefault<ZodTypeAny> | ZodObject<ZodRawShape> | ZodUnion<never>;

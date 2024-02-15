@@ -68,8 +68,23 @@ describe("Creating schema", () => {
             isHappy: true,
             birthday: new Date("1980-01-01"),
         });
-        expect(result._id).toBe(3);
+        expect(String(result._id).length).toBe(24);
         expect(result.name).toBe("Bob");
+    });
+
+    it("Should throw if an unsupported type is encountered", () => {
+        expect(() =>
+            createSchema(
+                z.object({
+                    test: z.symbol(),
+                }),
+            ),
+        ).toThrow(/Unsupported type/);
+    });
+
+    it("Shouldn't make a model if the name is missing", () => {
+        const result = createSchema(z.object({}), "", connection);
+        expect(result.model).toBeFalsy();
     });
 
     afterAll(() => {
