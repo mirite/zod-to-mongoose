@@ -51,6 +51,27 @@ describe("Creating schema", () => {
         expect(result.name).toBe("Bob");
     });
 
+    it("should create a schema when values are optional", async () => {
+        const { schema, model } = createSchema(
+            z.object({
+                name: z.string().optional().default("Bob"),
+                age: z.number().default(3).optional(),
+                isHappy: z.boolean().optional(),
+                birthday: z.date().default(new Date()),
+            }),
+            "optional",
+            connection,
+        );
+        expect(schema).toBeDefined();
+        expect(model).toBeDefined();
+        const result = await model.create({
+            isHappy: true,
+            birthday: new Date("1980-01-01"),
+        });
+        expect(result._id).toBe(3);
+        expect(result.name).toBe("Bob");
+    });
+
     afterAll(() => {
         disconnect();
     });
