@@ -2,3 +2,5 @@ node_modules
 .yarn/
 !.yarn/releases/
 dist
+coverage
+.tsup

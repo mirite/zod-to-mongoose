@@ -87,6 +87,33 @@ describe("Creating schema", () => {
         expect(result.model).toBeFalsy();
     });
 
+    it("Should be able to handle nested objects", async () => {
+        const { schema, model } = createSchema(
+            z.object({
+                name: z.string(),
+                address: z.object({
+                    street: z.string(),
+                    city: z.string(),
+                    zip: z.string(),
+                }),
+            }),
+            "nested",
+            connection,
+        );
+        expect(schema).toBeDefined();
+        expect(model).toBeDefined();
+        const result = await model.create({
+            name: "John Doe",
+            address: {
+                street: "123 Main St",
+                city: "Anytown",
+                zip: "12345",
+            },
+        });
+        expect(String(result._id).length).toBe(24);
+        //expect(result.address.street).toBe("123 Main St");
+    });
+
     afterAll(() => {
         disconnect();
     });

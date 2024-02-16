@@ -32,6 +32,11 @@ export function createSchema<T extends ZodRawShape>(
     return { schema, model: connection.model<T>(modelName, schema) };
 }
 
+/** @param definition */
+function isZodObject(definition: SupportedType): definition is ZodObject<ZodRawShape> {
+    return definition._def.typeName === "ZodObject";
+}
+
 /**
  * Convert a Zod field to a Mongoose type
  *
@@ -55,8 +60,13 @@ function convertField<T extends ZodRawShape>(type: string, zodField: T[Extract<k
         case "ZodDate":
             coreType = Date;
             break;
+        case "ZodObject":
+            break;
         default:
             throw new Error(`Unsupported type: ${type}`);
+    }
+    if (isZodObject(unwrappedData.definition)) {
+        coreType = createSchema(unwrappedData.definition);
     }
 
     if (!unwrappedData.defaultValue) {
