@@ -1,4 +1,4 @@
-import { ZodObject, ZodRawShape } from "zod";
+import { z, ZodObject, ZodRawShape } from "zod";
 import * as Mongoose from "mongoose";
 import { SchemaDefinition } from "mongoose";
 import { SupportedType } from "./types";
@@ -7,7 +7,7 @@ export function createSchema<T extends ZodRawShape>(
     zodObject: ZodObject<T>,
     modelName: string,
     connection: Mongoose.Connection,
-): { schema: Mongoose.Schema; model: Mongoose.Model<T> };
+): { schema: Mongoose.Schema; model: Mongoose.Model<z.infer<typeof zodObject>> };
 export function createSchema<T extends ZodRawShape>(zodObject: ZodObject<T>): Mongoose.Schema;
 /**
  * Create a Mongoose schema from a Zod shape
@@ -21,7 +21,7 @@ export function createSchema<T extends ZodRawShape>(
     zodObject: ZodObject<T>,
     modelName?: string,
     connection?: Mongoose.Connection,
-): Mongoose.Schema | { schema: Mongoose.Schema; model: Mongoose.Model<T> } {
+): Mongoose.Schema | { schema: Mongoose.Schema; model: Mongoose.Model<z.infer<typeof zodObject>> } {
     const convertedShape: Partial<SchemaDefinition> = {};
     for (const key in zodObject.shape) {
         const zodField = zodObject.shape[key];
@@ -29,7 +29,7 @@ export function createSchema<T extends ZodRawShape>(
     }
     const schema = new Mongoose.Schema(convertedShape);
     if (!connection || !modelName) return schema;
-    return { schema, model: connection.model<T>(modelName, schema) };
+    return { schema, model: connection.model<z.infer<typeof zodObject>>(modelName, schema) };
 }
 
 /**
