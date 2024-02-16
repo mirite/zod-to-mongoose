@@ -35,7 +35,8 @@
         "build": "tsup",
         "test": "jest --coverage",
         "lint": "eslint . --fix --ignore-path .gitignore",
-        "format": "prettier --write . --ignore-path .gitignore"
+        "format": "prettier --write . --ignore-path .gitignore",
+        "release": "yarn build && npm publish"
     },
     "devDependencies": {
         "@types/eslint": "^8.56.2",
@@ -53,6 +54,7 @@
     },
     "packageManager": "yarn@4.1.0",
     "dependencies": {
+        "@microsoft/api-extractor": "^7.40.1",
         "mongoose": "^8.1.2",
         "zod": "^3.22.4"
     }
