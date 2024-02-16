@@ -32,7 +32,12 @@ export function createSchema<T extends ZodRawShape>(
     return { schema, model: connection.model<T>(modelName, schema) };
 }
 
-/** @param definition */
+/**
+ * Check if a Zod definition is an object
+ *
+ * @param definition The Zod definition to check
+ * @returns Whether the definition is an object
+ */
 function isZodObject(definition: SupportedType): definition is ZodObject<ZodRawShape> {
     return definition._def.typeName === "ZodObject";
 }
