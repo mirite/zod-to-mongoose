@@ -33,7 +33,7 @@ const result = await model.create({
 ````
 
 ### Advanced
-If you pass a connection, the model will be created, 4registered with the connection, and returned for use.
+If you pass a connection, the model will be created, registered with the connection, and returned for use.
 ```typescript
 import { createSchema } from "@mirite/zod-to-mongoose";
 
