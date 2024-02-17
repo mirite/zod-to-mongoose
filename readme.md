@@ -64,4 +64,4 @@ Only a subset of Zod types are supported. The following types are supported:
 - `z.object()` (Nested objects are supported)
 - `z.union()` (Type safety is not guaranteed)
 
-Additionally, no additional validation is performed on the Mongoose schema.
+Another major caveat is that no additional validation is performed on the Mongoose schema. It is recommended to use Zod for validation before saving to the database, as well as on retrieval if there are data integrity concerns.
