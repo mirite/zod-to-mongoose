@@ -61,7 +61,7 @@ Only a subset of Zod types are supported. The following types are supported:
 - `z.number()`
 - `z.boolean()`
 - `z.date()`
-- `z.object()` (nested objects are supported)
+- `z.object()` (Nested objects are supported)
 - `z.union()` (Type safety is not guaranteed)
 
 Additionally, no additional validation is performed on the Mongoose schema.
