@@ -67,6 +67,9 @@ function convertField<T extends ZodRawShape>(type: string, zodField: T[Extract<k
             break;
         case "ZodObject":
             break;
+        case "ZodUnion":
+            coreType = {};
+            break;
         default:
             throw new Error(`Unsupported type: ${type}`);
     }

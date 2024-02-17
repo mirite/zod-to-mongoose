@@ -24,4 +24,8 @@ export type FieldDefinition = {
 
 export type Check = "";
 type SupportedPrimitive = ZodString | ZodNumber | ZodBoolean | ZodDate;
-export type SupportedType = SupportedPrimitive | ZodDefault<ZodTypeAny> | ZodObject<ZodRawShape> | ZodUnion<never>;
+export type SupportedType =
+    | SupportedPrimitive
+    | ZodDefault<ZodTypeAny>
+    | ZodObject<ZodRawShape>
+    | ZodUnion<readonly [ZodTypeAny, ...ZodTypeAny[]]>;
