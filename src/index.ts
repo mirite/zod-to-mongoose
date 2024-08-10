@@ -13,6 +13,7 @@ export function createSchema<T extends ZodRawShape>(zodObject: ZodObject<T>): Mo
 /**
  * Create a Mongoose schema from a Zod shape
  *
+ * @template T The Zod schema shape.
  * @param zodObject The Zod shape to create the schema from
  * @param modelName The unique name to assign to the model
  * @param connection The Mongoose connection to create the model from
@@ -46,9 +47,11 @@ function isZodObject(definition: SupportedType): definition is ZodObject<ZodRawS
 /**
  * Convert a Zod field to a Mongoose type
  *
+ * @template T The Zod schema shape.
  * @param type The key of the field
  * @param zodField The Zod field to convert
  * @returns The Mongoose type
+ * @throws TypeError If the type is not supported.
  */
 function convertField<T extends ZodRawShape>(type: string, zodField: T[Extract<keyof T, string>]) {
     const unwrappedData = unwrapType(zodField);
@@ -72,7 +75,7 @@ function convertField<T extends ZodRawShape>(type: string, zodField: T[Extract<k
             coreType = {};
             break;
         default:
-            throw new Error(`Unsupported type: ${type}`);
+            throw new TypeError(`Unsupported type: ${type}`);
     }
     if (isZodObject(unwrappedData.definition)) {
         coreType = createSchema(unwrappedData.definition);
