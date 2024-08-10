@@ -13,6 +13,7 @@ yarn add @mirite/zod-to-mongoose
 ### Basic
 
 Passing in a Zod schema will return a Mongoose schema.
+
 ```typescript
 import { createSchema } from "@mirite/zod-to-mongoose";
 
@@ -30,13 +31,14 @@ const result = await model.create({
     isHappy: true,
     birthday: new Date("1980-01-01"),
 });
-````
+```
 
 ### Advanced
+
 If you pass a connection, the model will be created, registered with the connection, and returned for use.
+
 ```typescript
 import { createSchema } from "@mirite/zod-to-mongoose";
-
 
 const model = createSchema(
     z.object({
@@ -56,12 +58,14 @@ const result = await model.create({
 ```
 
 ### Caveats
+
 Only a subset of Zod types are supported. The following types are supported:
-- `z.string()`
-- `z.number()`
-- `z.boolean()`
-- `z.date()`
-- `z.object()` (Nested objects are supported)
-- `z.union()` (Type safety is not guaranteed)
+
+-   `z.string()`
+-   `z.number()`
+-   `z.boolean()`
+-   `z.date()`
+-   `z.object()` (Nested objects are supported)
+-   `z.union()` (Type safety is not guaranteed)
 
 Another major caveat is that no additional validation is performed on the Mongoose schema. It is recommended to use Zod for validation before saving to the database, as well as on retrieval if there are data integrity concerns.

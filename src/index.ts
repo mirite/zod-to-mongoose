@@ -1,7 +1,8 @@
-import { z, ZodObject, ZodRawShape } from "zod";
 import * as Mongoose from "mongoose";
-import { SchemaDefinition } from "mongoose";
-import { SupportedType } from "./types";
+import type { SchemaDefinition } from "mongoose";
+import type { z, ZodObject, ZodRawShape } from "zod";
+
+import type { SupportedType } from "./types";
 
 export function createSchema<T extends ZodRawShape>(
     zodObject: ZodObject<T>,

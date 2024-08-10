@@ -1,6 +1,7 @@
-import { z } from "zod";
-import { createSchema } from "../src";
 import { connect, connection, disconnect } from "mongoose";
+import { z } from "zod";
+
+import { createSchema } from "../src";
 
 describe("Creating schema", () => {
     beforeAll(async () => {
