@@ -1,4 +1,5 @@
 import { connect, connection, disconnect } from "mongoose";
+import { describe, expect, it, beforeAll, afterAll } from "vitest";
 import { z } from "zod";
 
 import { createSchema } from "../src";
