@@ -40,20 +40,20 @@
         "release": "yarn build && npm publish"
     },
     "devDependencies": {
-        "@microsoft/api-extractor": "^7.47.5",
-        "@mirite/eslint-config-mirite": "^0.0.4",
-        "@vitest/coverage-v8": "^2.0.5",
-        "@vitest/ui": "^2.0.5",
-        "eslint": "^9.9.0",
-        "prettier": "^3.3.3",
+        "@microsoft/api-extractor": "^7.48.1",
+        "@mirite/eslint-config-mirite": "^0.1.1",
+        "@vitest/coverage-v8": "^2.1.8",
+        "@vitest/ui": "^2.1.8",
+        "eslint": "^9.17.0",
+        "prettier": "^3.4.2",
         "prettier-plugin-jsdoc": "^1.3.0",
-        "tsup": "^8.2.4",
-        "typescript": "^5.5.4",
-        "vitest": "^2.0.5"
+        "tsup": "^8.3.5",
+        "typescript": "^5.7.2",
+        "vitest": "^2.1.8"
     },
-    "packageManager": "yarn@4.4.0",
+    "packageManager": "yarn@4.6.0",
     "dependencies": {
-        "mongoose": "^8.5.2",
-        "zod": "^3.23.8"
+        "mongoose": "^8.9.3",
+        "zod": "^3.24.1"
     }
 }
