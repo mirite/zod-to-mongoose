@@ -1,6 +1,6 @@
 {
     "name": "@mirite/zod-to-mongoose",
-    "version": "0.0.5",
+    "version": "0.0.6",
     "description": "Package for creating mongoose schemas out of Zod schemas for type safety, and removing duplicate effort.",
     "types": "./dist/_tsup-dts-rollup.d.ts",
     "type": "module",
@@ -33,6 +33,7 @@
     "license": "MIT",
     "scripts": {
         "build": "tsup",
+        "check": "tsc --noEmit",
         "test": "vitest --run --coverage",
         "test:watch": "vitest --ui --coverage",
         "lint": "eslint --fix",
