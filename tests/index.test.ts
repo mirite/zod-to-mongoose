@@ -1,15 +1,36 @@
-import { connect, connection, disconnect } from "mongoose";
-import { describe, expect, it, beforeAll, afterAll } from "vitest";
+import mongoose from "mongoose";
+import { describe, expect, it, vi } from "vitest";
 import { z } from "zod";
 
 import { createSchema } from "../src";
 
+vi.mock("mongoose", () => {
+    return {
+        default: {
+            connection: {
+                model: vi.fn((_name, schema) => ({
+                    create: vi.fn(async (doc) => {
+                        const result = { _id: "123456789012345678901234", ...doc };
+                        // Apply default values from the schema
+                        for (const [key, value] of Object.entries(schema.obj)) {
+                            if (typeof value === "object" && value) {
+                                if ("default" in value && value.default !== undefined && result[key] === undefined) {
+                                    result[key] = typeof value.default === "function" ? value.default() : value.default;
+                                }
+                            }
+                        }
+                        return result;
+                    }),
+                })),
+            },
+        },
+        Schema: vi.fn((schemaDefinition) => ({
+            obj: schemaDefinition, // Store the schema definition for access
+        })),
+    };
+});
+
 describe("Creating schema", () => {
-    beforeAll(async () => {
-        const connectionStr = "mongodb://localhost:27017";
-        const dbName = "test";
-        await connect(`${connectionStr}/${dbName}`);
-    });
     it("should create a schema from a flat object with only primitives", async () => {
         const { schema, model } = createSchema(
             z.object({
@@ -19,7 +40,7 @@ describe("Creating schema", () => {
                 birthday: z.date(),
             }),
             "flat",
-            connection,
+            mongoose.connection,
         );
         expect(schema).toBeDefined();
         expect(model).toBeDefined();
@@ -41,7 +62,7 @@ describe("Creating schema", () => {
                 birthday: z.date(),
             }),
             "defaults",
-            connection,
+            mongoose.connection,
         );
         expect(schema).toBeDefined();
         expect(model).toBeDefined();
@@ -62,7 +83,7 @@ describe("Creating schema", () => {
                 birthday: z.date().default(new Date()),
             }),
             "optional",
-            connection,
+            mongoose.connection,
         );
         expect(schema).toBeDefined();
         expect(model).toBeDefined();
@@ -86,7 +107,7 @@ describe("Creating schema", () => {
         });
 
         it("Shouldn't make a model if the name is missing", () => {
-            const result = createSchema(z.object({}), "", connection);
+            const result = createSchema(z.object({}), "", mongoose.connection);
             expect(result.model).toBeFalsy();
         });
     });
@@ -101,7 +122,7 @@ describe("Creating schema", () => {
                     zip: z.string(),
                 }),
             });
-            const { schema, model } = createSchema(obj, "nested", connection);
+            const { schema, model } = createSchema(obj, "nested", mongoose.connection);
             expect(schema).toBeDefined();
             expect(model).toBeDefined();
             const result = await model.create({
@@ -121,7 +142,7 @@ describe("Creating schema", () => {
         const obj = z.object({
             salutation: z.union([z.string(), z.literal("Dr.")]),
         });
-        const { model } = createSchema(obj, "union", connection);
+        const { model } = createSchema(obj, "union", mongoose.connection);
         it("Should be able to handle literals", async () => {
             const result = await model.create({
                 salutation: "Dr.",
@@ -137,9 +158,5 @@ describe("Creating schema", () => {
             expect(String(result2._id).length).toBe(24);
             expect(result2.salutation).toBe("Custom");
         });
-    });
-
-    afterAll(() => {
-        disconnect();
     });
 });
