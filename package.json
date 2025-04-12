@@ -1,7 +1,7 @@
 {
     "name": "@mirite/zod-to-mongoose",
     "license": "MIT",
-    "version": "0.0.7",
+    "version": "0.1.0",
     "description": "Package for creating mongoose schemas out of Zod schemas for type safety, and removing duplicate effort.",
     "type": "module",
     "repository": {
