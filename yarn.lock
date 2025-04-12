@@ -817,7 +817,7 @@ __metadata:
     tsup: "npm:^8.4.0"
     typescript: "npm:^5.8.3"
     vitest: "npm:^3.1.1"
-    zod: "npm:^3.24.2"
+    zod: "npm:next"
   languageName: unknown
   linkType: soft
 
@@ -1541,6 +1541,13 @@ __metadata:
     loupe: "npm:^3.1.3"
     tinyrainbow: "npm:^2.0.0"
   checksum: 10c0/a9cfe0c0f095b58644ce3ba08309de5be8564c10dad9e62035bd378e60b2834e6a256e6e4ded7dcf027fdc2371301f7965040ad3e6323b747d5b3abbb7ceb0d6
+  languageName: node
+  linkType: hard
+
+"@zod/core@npm:0.4.6":
+  version: 0.4.6
+  resolution: "@zod/core@npm:0.4.6"
+  checksum: 10c0/ec05ca94deec69d7c4b7314f4674fa5703d88f8eb2c6d68347cf6ba8c4b24885774d5d3a574be07b2ae667fb81db3b4a874647a61d71b4449e784f75e39fa1a8
   languageName: node
   linkType: hard
 
@@ -6700,9 +6707,18 @@ __metadata:
   languageName: node
   linkType: hard
 
-"zod@npm:^3.22.4, zod@npm:^3.24.2":
+"zod@npm:^3.22.4":
   version: 3.24.2
   resolution: "zod@npm:3.24.2"
   checksum: 10c0/c638c7220150847f13ad90635b3e7d0321b36cce36f3fc6050ed960689594c949c326dfe2c6fa87c14b126ee5d370ccdebd6efb304f41ef5557a4aaca2824565
+  languageName: node
+  linkType: hard
+
+"zod@npm:next":
+  version: 4.0.0-beta.20250412T085909
+  resolution: "zod@npm:4.0.0-beta.20250412T085909"
+  dependencies:
+    "@zod/core": "npm:0.4.6"
+  checksum: 10c0/96cc16f816490d8e6166761b33098be5b004fa1d03f06f08a515ce139f83bb88e796ebe7c90dac0608b588d1ee7a2190d2ae551501f6d091340a92fe8047c8da
   languageName: node
   linkType: hard
