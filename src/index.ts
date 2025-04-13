@@ -41,7 +41,7 @@ export function createSchema<T extends ZodRawShape>(
  * @returns Whether the definition is an object
  */
 function isZodObject(definition: SupportedType): definition is ZodObject<ZodRawShape> {
-    return definition._def.typeName === "ZodObject";
+    return definition.def.type === "object";
 }
 
 /**
@@ -56,22 +56,22 @@ function isZodObject(definition: SupportedType): definition is ZodObject<ZodRawS
 function convertField<T extends ZodRawShape>(type: string, zodField: T[Extract<keyof T, string>]) {
     const unwrappedData = unwrapType(zodField);
     let coreType;
-    switch (unwrappedData.definition._def.typeName) {
-        case "ZodString":
+    switch (unwrappedData.definition.def.type) {
+        case "string":
             coreType = String;
             break;
-        case "ZodNumber":
+        case "number":
             coreType = Number;
             break;
-        case "ZodBoolean":
+        case "boolean":
             coreType = Boolean;
             break;
-        case "ZodDate":
+        case "date":
             coreType = Date;
             break;
-        case "ZodObject":
+        case "object":
             break;
-        case "ZodUnion":
+        case "union":
             coreType = {};
             break;
         default:
@@ -100,11 +100,11 @@ function unwrapType(data: SupportedType): { definition: SupportedType; optional:
     let definition = data;
     const optional = false;
     let defaultValue = undefined;
-    while ("innerType" in definition._def) {
-        if ("defaultValue" in definition._def) {
-            defaultValue = definition._def.defaultValue();
+    while ("innerType" in definition.def) {
+        if ("defaultValue" in definition.def) {
+            defaultValue = definition.def.defaultValue();
         }
-        definition = definition._def.innerType;
+        definition = definition.def.innerType;
     }
     return { definition, optional, defaultValue };
 }
