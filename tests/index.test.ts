@@ -9,7 +9,7 @@ vi.mock("mongoose", () => {
 		default: {
 			connection: {
 				model: vi.fn((_name, schema) => ({
-					create: vi.fn(async (doc) => {
+					create: vi.fn((doc) => {
 						const result = { _id: "123456789012345678901234", ...doc };
 						// Apply default values from the schema
 						for (const [key, value] of Object.entries(schema.obj)) {
@@ -19,7 +19,7 @@ vi.mock("mongoose", () => {
 								}
 							}
 						}
-						return result;
+						return Promise.resolve(result);
 					}),
 				})),
 			},
@@ -32,12 +32,12 @@ vi.mock("mongoose", () => {
 
 describe("Creating schema", () => {
 	it("should create a schema from a flat object with only primitives", async () => {
-		const { schema, model } = createSchema(
+		const { model, schema } = createSchema(
 			z.object({
-				name: z.string(),
 				age: z.number(),
-				isHappy: z.boolean(),
 				birthday: z.date(),
+				isHappy: z.boolean(),
+				name: z.string(),
 			}),
 			"flat",
 			mongoose.connection,
@@ -45,21 +45,21 @@ describe("Creating schema", () => {
 		expect(schema).toBeDefined();
 		expect(model).toBeDefined();
 		const result = await model.create({
-			name: "John Doe",
 			age: 42,
-			isHappy: true,
 			birthday: new Date("1980-01-01"),
+			isHappy: true,
+			name: "John Doe",
 		});
 		expect(String(result._id).length).toBe(24);
 	});
 
 	it("should create a schema from an object with default values", async () => {
-		const { schema, model } = createSchema(
+		const { model, schema } = createSchema(
 			z.object({
-				name: z.string().default("Bob"),
 				age: z.number().default(3),
-				isHappy: z.boolean(),
 				birthday: z.date(),
+				isHappy: z.boolean(),
+				name: z.string().default("Bob"),
 			}),
 			"defaults",
 			mongoose.connection,
@@ -67,20 +67,20 @@ describe("Creating schema", () => {
 		expect(schema).toBeDefined();
 		expect(model).toBeDefined();
 		const result = await model.create({
-			isHappy: true,
 			birthday: new Date("1980-01-01"),
+			isHappy: true,
 		});
 		expect(result.age).toBe(3);
 		expect(result.name).toBe("Bob");
 	});
 
 	it("should create a schema when values are optional", async () => {
-		const { schema, model } = createSchema(
+		const { model, schema } = createSchema(
 			z.object({
-				name: z.string().optional().default("Bob"),
 				age: z.number().default(3).optional(),
-				isHappy: z.boolean().optional(),
 				birthday: z.date().default(new Date()),
+				isHappy: z.boolean().optional(),
+				name: z.string().optional().default("Bob"),
 			}),
 			"optional",
 			mongoose.connection,
@@ -88,8 +88,8 @@ describe("Creating schema", () => {
 		expect(schema).toBeDefined();
 		expect(model).toBeDefined();
 		const result = await model.create({
-			isHappy: true,
 			birthday: new Date("1980-01-01"),
+			isHappy: true,
 		});
 		expect(String(result._id).length).toBe(24);
 		expect(result.name).toBe("Bob");
@@ -115,23 +115,23 @@ describe("Creating schema", () => {
 	describe("Objects", () => {
 		it("Should be able to handle nested objects", async () => {
 			const obj = z.object({
-				name: z.string(),
 				address: z.object({
-					street: z.string(),
 					city: z.string(),
+					street: z.string(),
 					zip: z.string(),
 				}),
+				name: z.string(),
 			});
-			const { schema, model } = createSchema(obj, "nested", mongoose.connection);
+			const { model, schema } = createSchema(obj, "nested", mongoose.connection);
 			expect(schema).toBeDefined();
 			expect(model).toBeDefined();
 			const result = await model.create({
-				name: "John Doe",
 				address: {
-					street: "123 Main St",
 					city: "Anytown",
+					street: "123 Main St",
 					zip: "12345",
 				},
+				name: "John Doe",
 			});
 			expect(String(result._id).length).toBe(24);
 			expect(result.address.street).toBe("123 Main St");

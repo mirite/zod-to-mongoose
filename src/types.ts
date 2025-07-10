@@ -10,6 +10,8 @@ import type {
 	ZodUnion,
 } from "zod";
 
+export type Check = "";
+
 export type Field = {
 	_def: FieldDefinition;
 	checks?: Array<Check>;
@@ -17,15 +19,13 @@ export type Field = {
 };
 
 export type FieldDefinition = {
-	typeName: string;
-	innerType?: Field;
 	description: string | undefined;
+	innerType?: Field;
+	typeName: string;
 };
-
-export type Check = "";
-type SupportedPrimitive = ZodString | ZodNumber | ZodBoolean | ZodDate;
 export type SupportedType =
 	| SupportedPrimitive
 	| ZodDefault<ZodTypeAny>
 	| ZodObject<ZodRawShape>
 	| ZodUnion<readonly [ZodTypeAny, ...ZodTypeAny[]]>;
+type SupportedPrimitive = ZodBoolean | ZodDate | ZodNumber | ZodString;
