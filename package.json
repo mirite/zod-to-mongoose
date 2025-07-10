@@ -1,60 +1,59 @@
 {
-    "name": "@mirite/zod-to-mongoose",
-    "license": "MIT",
-    "version": "0.1.0",
-    "description": "Package for creating mongoose schemas out of Zod schemas for type safety, and removing duplicate effort.",
-    "type": "module",
-    "repository": {
-        "type": "git",
-        "url": "git+https://github.com/mirite/zod-to-mongoose.git"
-    },
-    "author": {
-        "name": "Jesse Conner",
-        "email": "me@jesseconner.ca",
-        "url": "https://jesseconner.ca"
-    },
-    "keywords": [
-        "zod",
-        "mongoose",
-        "schema",
-        "type",
-        "type-safe"
-    ],
-    "issues": "https://github.com/mirite/zod-to-mongoose/issues",
-    "exports": {
-        ".": {
-            "import": "./dist/index.js",
-            "require": "./dist/index.cjs"
-        }
-    },
-    "types": "./dist/_tsup-dts-rollup.d.ts",
-    "files": [
-        "dist"
-    ],
-    "scripts": {
-        "build": "tsup",
-        "check": "tsc --noEmit",
-        "test": "vitest --run --coverage",
-        "test:watch": "vitest --ui --coverage",
-        "lint": "eslint --fix --cache",
-        "format": "prettier --write --cache .",
-        "release": "yarn build && npm publish"
-    },
-    "dependencies": {
-        "mongoose": "^8.13.2",
-        "zod": "^3.24.2"
-    },
-    "devDependencies": {
-        "@microsoft/api-extractor": "^7.52.3",
-        "@mirite/eslint-config-mirite": "^1.0.1",
-        "@vitest/coverage-v8": "^3.1.1",
-        "@vitest/ui": "^3.1.1",
-        "eslint": "^9.24.0",
-        "prettier": "^3.5.3",
-        "prettier-plugin-jsdoc": "^1.3.2",
-        "tsup": "^8.4.0",
-        "typescript": "^5.8.3",
-        "vitest": "^3.1.1"
-    },
-    "packageManager": "yarn@4.9.1"
+	"name": "@mirite/zod-to-mongoose",
+	"version": "0.1.1",
+	"description": "Package for creating mongoose schemas out of Zod schemas for type safety, and removing duplicate effort.",
+	"keywords": [
+		"zod",
+		"mongoose",
+		"schema",
+		"type",
+		"type-safe"
+	],
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/mirite/zod-to-mongoose.git"
+	},
+	"license": "MIT",
+	"author": {
+		"name": "Jesse Conner",
+		"email": "me@jesseconner.ca",
+		"url": "https://jesseconner.ca"
+	},
+	"type": "module",
+	"exports": {
+		".": {
+			"import": "./dist/index.js",
+			"require": "./dist/index.cjs"
+		}
+	},
+	"types": "./dist/_tsup-dts-rollup.d.ts",
+	"files": [
+		"dist"
+	],
+	"scripts": {
+		"build": "tsup",
+		"check": "tsc --noEmit",
+		"format": "prettier --write --cache .",
+		"lint": "eslint --fix --cache",
+		"release": "yarn build && npm publish",
+		"test": "vitest --run --coverage",
+		"test:watch": "vitest --ui --coverage"
+	},
+	"dependencies": {
+		"mongoose": "^8.16.3",
+		"zod": "^3.25.76"
+	},
+	"devDependencies": {
+		"@microsoft/api-extractor": "^7.52.8",
+		"@mirite/eslint-config-mirite": "^1.1.4",
+		"@vitest/coverage-v8": "^3.2.4",
+		"@vitest/ui": "^3.2.4",
+		"eslint": "^9.30.1",
+		"prettier": "^3.6.2",
+		"tsup": "^8.5.0",
+		"typescript": "^5.8.3",
+		"vitest": "^3.2.4"
+	},
+	"packageManager": "yarn@4.9.2",
+	"issues": "https://github.com/mirite/zod-to-mongoose/issues"
 }

@@ -18,18 +18,18 @@ Passing in a Zod schema will return a Mongoose schema.
 import { createSchema } from "@mirite/zod-to-mongoose";
 
 const schema = createSchema(
-    z.object({
-        name: z.string().optional().default("Bob"),
-        age: z.number().default(3).optional(),
-        isHappy: z.boolean().optional(),
-        birthday: z.date().default(new Date()),
-    }),
+	z.object({
+		name: z.string().optional().default("Bob"),
+		age: z.number().default(3).optional(),
+		isHappy: z.boolean().optional(),
+		birthday: z.date().default(new Date()),
+	}),
 );
 
 const model = mongoose.model("modelName", schema);
 const result = await model.create({
-    isHappy: true,
-    birthday: new Date("1980-01-01"),
+	isHappy: true,
+	birthday: new Date("1980-01-01"),
 });
 ```
 
@@ -41,19 +41,19 @@ If you pass a connection, the model will be created, registered with the connect
 import { createSchema } from "@mirite/zod-to-mongoose";
 
 const model = createSchema(
-    z.object({
-        name: z.string().optional().default("Bob"),
-        age: z.number().default(3).optional(),
-        isHappy: z.boolean().optional(),
-        birthday: z.date().default(new Date()),
-    }),
-    "modelName", // The unique name to give the model
-    connection, // Mongoose connection
+	z.object({
+		name: z.string().optional().default("Bob"),
+		age: z.number().default(3).optional(),
+		isHappy: z.boolean().optional(),
+		birthday: z.date().default(new Date()),
+	}),
+	"modelName", // The unique name to give the model
+	connection, // Mongoose connection
 );
 
 const result = await model.create({
-    isHappy: true,
-    birthday: new Date("1980-01-01"),
+	isHappy: true,
+	birthday: new Date("1980-01-01"),
 });
 ```
 
