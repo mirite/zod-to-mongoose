@@ -5,9 +5,9 @@ import type { z, ZodObject, ZodRawShape } from "zod";
 import type { SupportedType } from "./types";
 
 export function createSchema<T extends ZodRawShape>(
-    zodObject: ZodObject<T>,
-    modelName: string,
-    connection: Mongoose.Connection,
+	zodObject: ZodObject<T>,
+	modelName: string,
+	connection: Mongoose.Connection,
 ): { schema: Mongoose.Schema; model: Mongoose.Model<z.infer<typeof zodObject>> };
 export function createSchema<T extends ZodRawShape>(zodObject: ZodObject<T>): Mongoose.Schema;
 /**
@@ -20,18 +20,18 @@ export function createSchema<T extends ZodRawShape>(zodObject: ZodObject<T>): Mo
  * @returns The Mongoose schema
  */
 export function createSchema<T extends ZodRawShape>(
-    zodObject: ZodObject<T>,
-    modelName?: string,
-    connection?: Mongoose.Connection,
+	zodObject: ZodObject<T>,
+	modelName?: string,
+	connection?: Mongoose.Connection,
 ): Mongoose.Schema | { schema: Mongoose.Schema; model: Mongoose.Model<z.infer<typeof zodObject>> } {
-    const convertedShape: Partial<SchemaDefinition> = {};
-    for (const key in zodObject.shape) {
-        const zodField = zodObject.shape[key];
-        convertedShape[key] = convertField(key, zodField);
-    }
-    const schema = new Mongoose.Schema(convertedShape);
-    if (!connection || !modelName) return schema;
-    return { schema, model: connection.model<z.infer<typeof zodObject>>(modelName, schema) };
+	const convertedShape: Partial<SchemaDefinition> = {};
+	for (const key in zodObject.shape) {
+		const zodField = zodObject.shape[key];
+		convertedShape[key] = convertField(key, zodField);
+	}
+	const schema = new Mongoose.Schema(convertedShape);
+	if (!connection || !modelName) return schema;
+	return { schema, model: connection.model<z.infer<typeof zodObject>>(modelName, schema) };
 }
 
 /**
@@ -41,7 +41,7 @@ export function createSchema<T extends ZodRawShape>(
  * @returns Whether the definition is an object
  */
 function isZodObject(definition: SupportedType): definition is ZodObject<ZodRawShape> {
-    return definition.def.type === "object";
+	return definition.def.type === "object";
 }
 
 /**
@@ -54,40 +54,40 @@ function isZodObject(definition: SupportedType): definition is ZodObject<ZodRawS
  * @throws TypeError If the type is not supported.
  */
 function convertField<T extends ZodRawShape>(type: string, zodField: T[Extract<keyof T, string>]) {
-    const unwrappedData = unwrapType(zodField);
-    let coreType;
-    switch (unwrappedData.definition.def.type) {
-        case "string":
-            coreType = String;
-            break;
-        case "number":
-            coreType = Number;
-            break;
-        case "boolean":
-            coreType = Boolean;
-            break;
-        case "date":
-            coreType = Date;
-            break;
-        case "object":
-            break;
-        case "union":
-            coreType = {};
-            break;
-        default:
-            throw new TypeError(`Unsupported type: ${type}`);
-    }
-    if (isZodObject(unwrappedData.definition)) {
-        coreType = createSchema(unwrappedData.definition);
-    }
+	const unwrappedData = unwrapType(zodField);
+	let coreType;
+	switch (unwrappedData.definition.def.type) {
+		case "string":
+			coreType = String;
+			break;
+		case "number":
+			coreType = Number;
+			break;
+		case "boolean":
+			coreType = Boolean;
+			break;
+		case "date":
+			coreType = Date;
+			break;
+		case "object":
+			break;
+		case "union":
+			coreType = {};
+			break;
+		default:
+			throw new TypeError(`Unsupported type: ${type}`);
+	}
+	if (isZodObject(unwrappedData.definition)) {
+		coreType = createSchema(unwrappedData.definition);
+	}
 
-    if (!unwrappedData.defaultValue) {
-        return coreType;
-    }
-    return {
-        type: coreType,
-        default: unwrappedData.defaultValue,
-    };
+	if (!unwrappedData.defaultValue) {
+		return coreType;
+	}
+	return {
+		type: coreType,
+		default: unwrappedData.defaultValue,
+	};
 }
 
 /**
@@ -97,14 +97,14 @@ function convertField<T extends ZodRawShape>(type: string, zodField: T[Extract<k
  * @returns The inner type data along with the default if present.
  */
 function unwrapType(data: SupportedType): { definition: SupportedType; optional: boolean; defaultValue?: unknown } {
-    let definition = data;
-    const optional = false;
-    let defaultValue = undefined;
-    while ("innerType" in definition.def) {
-        if ("defaultValue" in definition.def) {
-            defaultValue = definition.def.defaultValue();
-        }
-        definition = definition.def.innerType;
-    }
-    return { definition, optional, defaultValue };
+	let definition = data;
+	const optional = false;
+	let defaultValue = undefined;
+	while ("innerType" in definition.def) {
+		if ("defaultValue" in definition.def) {
+			defaultValue = definition.def.defaultValue();
+		}
+		definition = definition.def.innerType;
+	}
+	return { definition, optional, defaultValue };
 }
