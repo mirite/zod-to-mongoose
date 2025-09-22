@@ -1,5 +1,5 @@
 import type { SchemaDefinition } from "mongoose";
-import type { z, ZodObject, ZodRawShape } from "zod";
+import type { z, ZodArray, ZodObject, ZodRawShape } from "zod";
 
 import * as Mongoose from "mongoose";
 
@@ -48,6 +48,21 @@ function convertField<T extends ZodRawShape>(type: string, zodField: T[Extract<k
 	const unwrappedData = unwrapType(zodField);
 	let coreType;
 	switch (unwrappedData.definition._def.typeName) {
+		case "ZodArray": {
+			const arrayType = unwrappedData.definition as ZodArray<SupportedType>;
+			const elementType = arrayType._def.type;
+			if (isZodObject(elementType)) {
+				const shape = elementType.shape;
+				const convertedShape: SchemaDefinition = {};
+				for (const key in shape) {
+					convertedShape[key] = convertField(key, shape[key]);
+				}
+				coreType = [convertedShape];
+			} else {
+				coreType = [convertField(type, elementType)];
+			}
+			break;
+		}
 		case "ZodBoolean":
 			coreType = Boolean;
 			break;
