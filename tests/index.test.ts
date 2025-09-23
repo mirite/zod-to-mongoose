@@ -9,7 +9,7 @@ vi.mock("mongoose", () => {
 		default: {
 			connection: {
 				model: vi.fn((_name, schema) => ({
-					create: vi.fn(async (doc) => {
+					create: vi.fn((doc) => {
 						const result = { _id: "123456789012345678901234", ...doc };
 						// Apply default values from the schema
 						for (const [key, value] of Object.entries(schema.obj)) {
@@ -19,7 +19,7 @@ vi.mock("mongoose", () => {
 								}
 							}
 						}
-						return result;
+						return Promise.resolve(result);
 					}),
 				})),
 			},
@@ -131,9 +131,14 @@ describe("Creating schema", () => {
 				),
 			});
 			const { schema } = createSchema(obj, "array", mongoose.connection);
-			expect(schema.obj.items).toBeInstanceOf(Array);
+			if (!Array.isArray(schema.obj.items)) {
+				throw new Error("Expected items to be an array");
+			}
+
 			const subSchema = schema.obj.items[0];
+			if (!("name" in subSchema)) throw new Error("Expected name to be in subschema");
 			expect(subSchema.name).toBe(String);
+			if (!("value" in subSchema)) throw new Error("Expected name to be in subschema");
 			expect(subSchema.value).toBe(Number);
 		});
 	});
