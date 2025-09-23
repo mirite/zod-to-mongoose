@@ -1,7 +1,6 @@
 import type { SchemaDefinition } from "mongoose";
-import type { z, ZodArray, ZodObject, ZodRawShape } from "zod";
-
 import * as Mongoose from "mongoose";
+import type { z, ZodArray, ZodObject, ZodRawShape } from "zod";
 
 import type { SupportedType } from "./types";
 
@@ -9,7 +8,7 @@ export function createSchema<T extends ZodRawShape>(
 	zodObject: ZodObject<T>,
 	modelName: string,
 	connection: Mongoose.Connection,
-): { model: Mongoose.Model<z.infer<typeof zodObject>>; schema: Mongoose.Schema; };
+): { model: Mongoose.Model<z.infer<typeof zodObject>>; schema: Mongoose.Schema };
 export function createSchema<T extends ZodRawShape>(zodObject: ZodObject<T>): Mongoose.Schema;
 /**
  * Create a Mongoose schema from a Zod shape
@@ -24,7 +23,7 @@ export function createSchema<T extends ZodRawShape>(
 	zodObject: ZodObject<T>,
 	modelName?: string,
 	connection?: Mongoose.Connection,
-): Mongoose.Schema | { model: Mongoose.Model<z.infer<typeof zodObject>>; schema: Mongoose.Schema; } {
+): Mongoose.Schema | { model: Mongoose.Model<z.infer<typeof zodObject>>; schema: Mongoose.Schema } {
 	const convertedShape: Partial<SchemaDefinition> = {};
 	for (const key in zodObject.shape) {
 		const zodField = zodObject.shape[key];
@@ -112,7 +111,7 @@ function isZodObject(definition: SupportedType): definition is ZodObject<ZodRawS
  * @param data The type data to unwrap.
  * @returns The inner type data along with the default if present.
  */
-function unwrapType(data: SupportedType): { defaultValue?: unknown; definition: SupportedType; optional: boolean; } {
+function unwrapType(data: SupportedType): { defaultValue?: unknown; definition: SupportedType; optional: boolean } {
 	let definition = data;
 	const optional = false;
 	let defaultValue = undefined;

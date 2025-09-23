@@ -753,7 +753,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@microsoft/api-extractor@npm:^7.52.8":
+"@microsoft/api-extractor@npm:^7.52.13":
   version: 7.52.13
   resolution: "@microsoft/api-extractor@npm:7.52.13"
   dependencies:
@@ -795,7 +795,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@mirite/eslint-config-mirite@npm:^1.1.4":
+"@mirite/eslint-config-mirite@npm:^1.3.1":
   version: 1.3.1
   resolution: "@mirite/eslint-config-mirite@npm:1.3.1"
   dependencies:
@@ -826,15 +826,15 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@mirite/zod-to-mongoose@workspace:."
   dependencies:
-    "@microsoft/api-extractor": "npm:^7.52.8"
-    "@mirite/eslint-config-mirite": "npm:^1.1.4"
+    "@microsoft/api-extractor": "npm:^7.52.13"
+    "@mirite/eslint-config-mirite": "npm:^1.3.1"
     "@vitest/coverage-v8": "npm:^3.2.4"
     "@vitest/ui": "npm:^3.2.4"
-    eslint: "npm:^9.30.1"
-    mongoose: "npm:^8.16.3"
+    eslint: "npm:^9.36.0"
+    mongoose: "npm:^8.18.2"
     prettier: "npm:^3.6.2"
     tsup: "npm:^8.5.0"
-    typescript: "npm:^5.8.3"
+    typescript: "npm:^5.9.2"
     vitest: "npm:^3.2.4"
     zod: "npm:^3.25.76"
   languageName: unknown
@@ -2918,7 +2918,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"eslint@npm:^9.30.1":
+"eslint@npm:^9.36.0":
   version: 9.36.0
   resolution: "eslint@npm:9.36.0"
   dependencies:
@@ -4685,7 +4685,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"mongoose@npm:^8.16.3":
+"mongoose@npm:^8.18.2":
   version: 8.18.2
   resolution: "mongoose@npm:8.18.2"
   dependencies:
@@ -6366,7 +6366,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"typescript@npm:^5.8.3":
+"typescript@npm:^5.9.2":
   version: 5.9.2
   resolution: "typescript@npm:5.9.2"
   bin:
@@ -6386,7 +6386,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"typescript@patch:typescript@npm%3A^5.8.3#optional!builtin<compat/typescript>":
+"typescript@patch:typescript@npm%3A^5.9.2#optional!builtin<compat/typescript>":
   version: 5.9.2
   resolution: "typescript@patch:typescript@npm%3A5.9.2#optional!builtin<compat/typescript>::version=5.9.2&hash=5786d5"
   bin:
