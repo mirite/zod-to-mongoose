@@ -1,4 +1,5 @@
 import type {
+	ZodArray,
 	ZodBoolean,
 	ZodDate,
 	ZodDefault,
@@ -25,6 +26,7 @@ export type FieldDefinition = {
 };
 export type SupportedType =
 	| SupportedPrimitive
+	| ZodArray<ZodTypeAny>
 	| ZodDefault<ZodTypeAny>
 	| ZodObject<ZodRawShape>
 	| ZodUnion<readonly [ZodTypeAny, ...ZodTypeAny[]]>;
