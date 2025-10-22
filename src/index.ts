@@ -1,15 +1,37 @@
 import type { SchemaDefinition } from "mongoose";
-import type { z, ZodObject, ZodRawShape } from "zod";
-
 import * as Mongoose from "mongoose";
+import { ZodFirstPartyTypeKind, type z, type ZodArray, type ZodObject, type ZodRawShape } from "zod";
 
 import type { SupportedType } from "./types";
 
+/**
+ * Represents a valid type for a Mongoose schema field definition. This is a recursive type that handles all possible
+ * valid structures for a schema property, including nested objects and arrays.
+ *
+ * @internal
+ */
+type MongooseSchemaType =
+	| Mongoose.Schema
+	| MongooseSchemaType[]
+	| typeof Boolean
+	| typeof Date
+	| typeof Number
+	// This covers both a schema definition for a sub-document and the empty
+	// object `{}` used for Mixed types.
+	| typeof String
+	// This covers an array of sub-documents or an array of primitives.
+	// Mongoose expects an array with a single element defining the type.
+	| { [key: string]: MongooseSchemaType }
+	// This covers the object format for specifying a default value.
+	| {
+			default?: unknown;
+			type: MongooseSchemaType;
+	  };
 export function createSchema<T extends ZodRawShape>(
 	zodObject: ZodObject<T>,
 	modelName: string,
 	connection: Mongoose.Connection,
-): { model: Mongoose.Model<z.infer<typeof zodObject>>; schema: Mongoose.Schema; };
+): { model: Mongoose.Model<z.infer<typeof zodObject>>; schema: Mongoose.Schema };
 export function createSchema<T extends ZodRawShape>(zodObject: ZodObject<T>): Mongoose.Schema;
 /**
  * Create a Mongoose schema from a Zod shape
@@ -24,7 +46,7 @@ export function createSchema<T extends ZodRawShape>(
 	zodObject: ZodObject<T>,
 	modelName?: string,
 	connection?: Mongoose.Connection,
-): Mongoose.Schema | { model: Mongoose.Model<z.infer<typeof zodObject>>; schema: Mongoose.Schema; } {
+): Mongoose.Schema | { model: Mongoose.Model<z.infer<typeof zodObject>>; schema: Mongoose.Schema } {
 	const convertedShape: Partial<SchemaDefinition> = {};
 	for (const key in zodObject.shape) {
 		const zodField = zodObject.shape[key];
@@ -44,25 +66,40 @@ export function createSchema<T extends ZodRawShape>(
  * @returns The Mongoose type
  * @throws TypeError If the type is not supported.
  */
-function convertField<T extends ZodRawShape>(type: string, zodField: T[Extract<keyof T, string>]) {
+function convertField<T extends ZodRawShape>(type: string, zodField: T[Extract<keyof T, string>]): MongooseSchemaType {
 	const unwrappedData = unwrapType(zodField);
-	let coreType;
-	switch (unwrappedData.definition.def.type) {
-		case "boolean":
+	let coreType: MongooseSchemaType | undefined;
+	switch (unwrappedData.definition._def.typeName) {
+		case ZodFirstPartyTypeKind.ZodArray: {
+			const arrayType = unwrappedData.definition as ZodArray<SupportedType>;
+			const elementType = arrayType._def.type;
+			if (isZodObject(elementType)) {
+				const shape = elementType.shape;
+				const convertedShape: { [key: string]: MongooseSchemaType } = {};
+				for (const key in shape) {
+					convertedShape[key] = convertField(key, shape[key]);
+				}
+				coreType = [convertedShape];
+			} else {
+				coreType = [convertField(type, elementType)];
+			}
+			break;
+		}
+		case ZodFirstPartyTypeKind.ZodBoolean:
 			coreType = Boolean;
 			break;
-		case "date":
+		case ZodFirstPartyTypeKind.ZodDate:
 			coreType = Date;
 			break;
-		case "number":
+		case ZodFirstPartyTypeKind.ZodNumber:
 			coreType = Number;
 			break;
-		case "object":
+		case ZodFirstPartyTypeKind.ZodObject:
 			break;
-		case "string":
+		case ZodFirstPartyTypeKind.ZodString:
 			coreType = String;
 			break;
-		case "union":
+		case ZodFirstPartyTypeKind.ZodUnion:
 			coreType = {};
 			break;
 		default:
@@ -71,7 +108,9 @@ function convertField<T extends ZodRawShape>(type: string, zodField: T[Extract<k
 	if (isZodObject(unwrappedData.definition)) {
 		coreType = createSchema(unwrappedData.definition);
 	}
-
+	if (coreType === undefined) {
+		throw new TypeError(`Could not determine Mongoose type for Zod type: ${type}`);
+	}
 	if (!unwrappedData.defaultValue) {
 		return coreType;
 	}
@@ -88,7 +127,7 @@ function convertField<T extends ZodRawShape>(type: string, zodField: T[Extract<k
  * @returns Whether the definition is an object
  */
 function isZodObject(definition: SupportedType): definition is ZodObject<ZodRawShape> {
-	return definition.def.type === "object";
+	return definition._def.typeName === ZodFirstPartyTypeKind.ZodObject;
 }
 
 /**
@@ -97,15 +136,15 @@ function isZodObject(definition: SupportedType): definition is ZodObject<ZodRawS
  * @param data The type data to unwrap.
  * @returns The inner type data along with the default if present.
  */
-function unwrapType(data: SupportedType): { defaultValue?: unknown; definition: SupportedType; optional: boolean; } {
+function unwrapType(data: SupportedType): { defaultValue?: unknown; definition: SupportedType; optional: boolean } {
 	let definition = data;
 	const optional = false;
 	let defaultValue = undefined;
-	while ("innerType" in definition.def) {
-		if ("defaultValue" in definition.def) {
-			defaultValue = definition.def.defaultValue();
+	while ("innerType" in definition._def) {
+		if ("defaultValue" in definition._def) {
+			defaultValue = definition._def.defaultValue();
 		}
-		definition = definition.def.innerType;
+		definition = definition._def.innerType;
 	}
 	return { defaultValue, definition, optional };
 }

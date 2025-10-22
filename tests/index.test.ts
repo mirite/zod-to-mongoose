@@ -112,6 +112,37 @@ describe("Creating schema", () => {
 		});
 	});
 
+	describe("Arrays", () => {
+		it("should handle arrays of strings", () => {
+			const obj = z.object({
+				items: z.array(z.string()),
+			});
+			const { schema } = createSchema(obj, "array", mongoose.connection);
+			expect(schema.obj.items).toEqual([String]);
+		});
+
+		it("should handle arrays of objects", () => {
+			const obj = z.object({
+				items: z.array(
+					z.object({
+						name: z.string(),
+						value: z.number(),
+					}),
+				),
+			});
+			const { schema } = createSchema(obj, "array", mongoose.connection);
+			if (!Array.isArray(schema.obj.items)) {
+				throw new Error("Expected items to be an array");
+			}
+
+			const subSchema = schema.obj.items[0];
+			if (!("name" in subSchema)) throw new Error("Expected name to be in subschema");
+			expect(subSchema.name).toBe(String);
+			if (!("value" in subSchema)) throw new Error("Expected name to be in subschema");
+			expect(subSchema.value).toBe(Number);
+		});
+	});
+
 	describe("Objects", () => {
 		it("Should be able to handle nested objects", async () => {
 			const obj = z.object({
