@@ -1,9 +1,12 @@
 import type {
+	ZodArray,
 	ZodBoolean,
 	ZodDate,
 	ZodDefault,
+	ZodEnum,
 	ZodNumber,
 	ZodObject,
+	ZodOptional,
 	ZodRawShape,
 	ZodString,
 	ZodTypeAny,
@@ -25,7 +28,10 @@ export type FieldDefinition = {
 };
 export type SupportedType =
 	| SupportedPrimitive
+	| ZodArray<ZodTypeAny>
 	| ZodDefault<ZodTypeAny>
+	| ZodEnum<[string, ...string[]]>
 	| ZodObject<ZodRawShape>
+	| ZodOptional<ZodTypeAny>
 	| ZodUnion<readonly [ZodTypeAny, ...ZodTypeAny[]]>;
 type SupportedPrimitive = ZodBoolean | ZodDate | ZodNumber | ZodString;

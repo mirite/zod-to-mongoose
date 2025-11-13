@@ -1,5 +1,6 @@
-import type { SchemaDefinition } from "mongoose";
-import type { z, ZodArray, ZodEnum, ZodObject, ZodOptional, ZodRawShape } from "zod";
+import type { SchemaDefinition, SchemaTypeOptions } from "mongoose";
+import { ZodOptional } from "zod";
+import type { z, ZodArray, ZodEnum, ZodObject, ZodRawShape, ZodTypeAny } from "zod";
 
 import * as Mongoose from "mongoose";
 
@@ -44,7 +45,10 @@ export function createSchema<T extends ZodRawShape>(
  * @returns The Mongoose type
  * @throws TypeError If the type is not supported.
  */
-function convertField<T extends ZodRawShape>(type: string, zodField: T[Extract<keyof T, string>]) {
+function convertField<T extends ZodRawShape>(
+	type: string,
+	zodField: T[Extract<keyof T, string>],
+): SchemaTypeOptions<unknown> {
 	const unwrappedData = unwrapType(zodField);
 	let coreType;
 	switch (unwrappedData.definition._def.typeName) {
@@ -94,7 +98,7 @@ function convertField<T extends ZodRawShape>(type: string, zodField: T[Extract<k
 	}
 
 	if (!unwrappedData.defaultValue) {
-		return coreType;
+		return coreType as SchemaTypeOptions<unknown>;
 	}
 	return {
 		default: unwrappedData.defaultValue,
@@ -108,7 +112,7 @@ function convertField<T extends ZodRawShape>(type: string, zodField: T[Extract<k
  * @param definition The Zod definition to check
  * @returns Whether the definition is an object
  */
-function isZodObject(definition: SupportedType): definition is ZodObject<ZodRawShape> {
+function isZodObject(definition: ZodTypeAny): definition is ZodObject<ZodRawShape> {
 	return definition._def.typeName === "ZodObject";
 }
 
@@ -119,18 +123,22 @@ function isZodObject(definition: SupportedType): definition is ZodObject<ZodRawS
  * @returns The inner type data along with the default if present.
  */
 function unwrapType(data: SupportedType): { defaultValue?: unknown; definition: SupportedType; optional: boolean; } {
-	let definition = data;
+	let definition: SupportedType = data;
 	let optional = false;
 	let defaultValue = undefined;
 
-	while (definition._def.typeName === "ZodDefault" || definition._def.typeName === "ZodOptional") {
-		if (definition._def.typeName === "ZodDefault") {
-			defaultValue = definition._def.defaultValue();
-		}
+	while (true) {
 		if (definition._def.typeName === "ZodOptional") {
 			optional = true;
+			definition = (definition as ZodOptional<SupportedType>)._def.innerType as SupportedType;
+			continue;
 		}
-		definition = definition._def.innerType;
+		if (definition._def.typeName === "ZodDefault") {
+			defaultValue = definition._def.defaultValue();
+			definition = definition._def.innerType as SupportedType;
+			continue;
+		}
+		break;
 	}
 
 	return { defaultValue, definition, optional };

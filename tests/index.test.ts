@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+import mongoose, { Schema, SchemaDefinition } from "mongoose";
 import { describe, expect, it, vi } from "vitest";
 import { z } from "zod";
 
@@ -132,7 +132,9 @@ describe("Creating schema", () => {
 			});
 			const { schema } = createSchema(obj, "array", mongoose.connection);
 			expect(schema.obj.items).toBeInstanceOf(Array);
-			const subSchema = schema.obj.items[0];
+			expect(schema.obj.items).toBeDefined();
+			if (!schema.obj.items) return;
+			const subSchema = (schema.obj.items as SchemaDefinition[])[0];
 			expect(subSchema.name).toBe(String);
 			expect(subSchema.value).toBe(Number);
 		});
@@ -235,7 +237,9 @@ describe("Creating schema", () => {
 			});
 
 			const { schema } = createSchema(TestSchema, "complex", mongoose.connection);
-			const customPropertyMapping = schema.obj.customPropertyMapping[0];
+			expect(schema.obj.customPropertyMapping).toBeDefined();
+			if (!schema.obj.customPropertyMapping) return;
+			const customPropertyMapping = (schema.obj.customPropertyMapping as SchemaDefinition[])[0];
 			expect(customPropertyMapping.type).toEqual({ type: String, enum: ['text', 'enum-single', 'enum-multi'] });
 			expect(customPropertyMapping.useCase).toEqual({ type: String, enum: ['edit', 'readOnly'] });
 		});
