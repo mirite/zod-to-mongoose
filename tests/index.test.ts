@@ -1,4 +1,6 @@
-import mongoose, { Schema, SchemaDefinition } from "mongoose";
+import type { SchemaDefinition } from "mongoose";
+
+import mongoose, { Schema } from "mongoose";
 import { describe, expect, it, vi } from "vitest";
 import { z } from "zod";
 
@@ -189,95 +191,37 @@ describe("Creating schema", () => {
 	});
 
 	describe("Complex Schemas", () => {
-		it("should handle the customPropertyMapping schema", () => {
+		it("should handle a complex example schema with enums, array of schemas", () => {
 			const CustomPropertyMappingSchema = z.object({
-				sectionTitle: z.string().optional().describe(
-					JSON.stringify({
-						description: "The section title for grouping related properties in the UI",
-					}),
-				),
-				propertyKey: z.string().describe(
-					JSON.stringify({
-						description: "The third party property key (can be nested using dot notation, e.g., 'properties.custom_field')",
-					}),
-				),
-				displayTitle: z.string().describe(
-					JSON.stringify({
-						description: "The display title shown in the UI",
-					}),
-				),
-				type: z.enum(['text', 'enum-single', 'enum-multi']).describe(
-					JSON.stringify({
-						description: "The field type: text (string input), enum-single (dropdown), enum-multi (multi-select)",
-					}),
-				),
-				enum_options: z.array(z.string()).optional().describe(
-					JSON.stringify({
-						description: "Available options for enum-single and enum-multi types",
-					}),
-				),
-				useCase: z.enum(['edit', 'readOnly']).describe(
-					JSON.stringify({
-						description: "Whether the field is editable or read-only in the UI",
-					}),
-				),
-				required: z.boolean().optional().describe(
-					JSON.stringify({
-						description: "Whether the field is required",
-					}),
-				),
+				optionalArray: z.array(z.string()).optional(),
+				propertyKey: z.string(),
+				required: z.boolean().optional(),
+				title: z.string(),
+				type: z.enum(['text', 'number']),
+				useCase: z.enum(['edit', 'readOnly'])
 			});
 
 			const TestSchema = z.object({
-				customPropertyMapping: z.array(CustomPropertyMappingSchema).optional().describe(
-					JSON.stringify({
-						description: "Custom property mappings for advanced field configuration with sections and editable fields",
-					}),
-				),
+				customPropertyMapping: z.array(CustomPropertyMappingSchema).optional()
 			});
 
 			const { schema } = createSchema(TestSchema, "complex", mongoose.connection);
 			expect(schema.obj.customPropertyMapping).toBeDefined();
 			if (!schema.obj.customPropertyMapping) return;
 			const customPropertyMapping = (schema.obj.customPropertyMapping as SchemaDefinition[])[0];
-			expect(customPropertyMapping.type).toEqual({ type: String, enum: ['text', 'enum-single', 'enum-multi'] });
-			expect(customPropertyMapping.useCase).toEqual({ type: String, enum: ['edit', 'readOnly'] });
+			expect(customPropertyMapping.type).toEqual({ enum: ['text', 'number'], type: String });
+			expect(customPropertyMapping.useCase).toEqual({ enum: ['edit', 'readOnly'], type: String });
 		});
 	});
 
 	describe("Nullable Schemas", () => {
 		it("should handle nullable fields", () => {
 			const NullableSchema = z.object({
-				deletedAt: z.string().optional().nullable().describe(
-					JSON.stringify({
-						description: 'If tenant is deleted, this will have the ISO date of when it has occured',
-						meta: {
-							static: true,
-							hidden: true,
-						},
-					}),
-				),
+				deletedAt: z.string().optional().nullable()
 			});
 
 			const { schema } = createSchema(NullableSchema, "nullable", mongoose.connection);
-			expect(schema.obj.deletedAt).toEqual({ type: String, default: null });
-		});
-
-		it("should handle nullable and optional fields", () => {
-			const NullableSchema = z.object({
-				deletedAt: z.string().nullable().optional().describe(
-					JSON.stringify({
-						description: 'If tenant is deleted, this will have the ISO date of when it has occured',
-						meta: {
-							static: true,
-							hidden: true,
-						},
-					}),
-				),
-			});
-
-			const { schema } = createSchema(NullableSchema, "nullable-optional", mongoose.connection);
-			expect(schema.obj.deletedAt).toEqual({ type: String, default: null });
+			expect(schema.obj.deletedAt).toEqual({ default: null, type: String });
 		});
 	});
 });

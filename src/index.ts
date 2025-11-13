@@ -1,6 +1,5 @@
 import type { SchemaDefinition, SchemaTypeOptions } from "mongoose";
-import { ZodNullable, ZodOptional } from "zod";
-import type { z, ZodArray, ZodEnum, ZodObject, ZodRawShape, ZodTypeAny } from "zod";
+import type { z, ZodArray, ZodEnum, ZodNullable, ZodObject, ZodOptional , ZodRawShape, ZodTypeAny } from "zod";
 
 import * as Mongoose from "mongoose";
 
@@ -154,7 +153,7 @@ function unwrapType(
 	) {
 		if (definition._def.typeName === "ZodOptional") {
 			optional = true;
-			definition = (definition as ZodOptional<SupportedType>)._def.innerType as SupportedType;
+			definition = (definition as ZodOptional<SupportedType>)._def.innerType;
 		}
 		if (definition._def.typeName === "ZodDefault") {
 			defaultValue = definition._def.defaultValue();
@@ -162,7 +161,7 @@ function unwrapType(
 		}
 		if (definition._def.typeName === "ZodNullable") {
 			nullable = true;
-			definition = (definition as ZodNullable<SupportedType>)._def.innerType as SupportedType;
+			definition = (definition as ZodNullable<SupportedType>)._def.innerType;
 		}
 	}
 
