@@ -79,9 +79,6 @@ function convertField<T extends ZodRawShape>(
 				type: String,
 			};
 			break;
-		case "ZodNullable":
-			coreType = null;
-			break;
 		case "ZodNumber":
 			coreType = Number;
 			break;
@@ -90,9 +87,19 @@ function convertField<T extends ZodRawShape>(
 		case "ZodString":
 			coreType = String;
 			break;
-		case "ZodUnion":
+		case "ZodUnion": {
+			const types = (unwrappedData.definition._def as any).options;
+			const nullish = types.find((t: any) => t._def.typeName === "ZodNull");
+			if (nullish) {
+				const otherType = types.find((t: any) => t._def.typeName !== "ZodNull");
+				const converted = convertField(type, otherType);
+				(converted as any).default = null;
+				coreType = converted;
+				break;
+			}
 			coreType = {};
 			break;
+		}
 		default:
 			throw new TypeError(`Unsupported type: ${type}`);
 	}
@@ -140,23 +147,23 @@ function unwrapType(
 	let nullable = false;
 	let defaultValue = undefined;
 
-	while (true) {
+	while (
+		definition._def.typeName === "ZodOptional" ||
+		definition._def.typeName === "ZodDefault" ||
+		definition._def.typeName === "ZodNullable"
+	) {
 		if (definition._def.typeName === "ZodOptional") {
 			optional = true;
 			definition = (definition as ZodOptional<SupportedType>)._def.innerType as SupportedType;
-			continue;
 		}
 		if (definition._def.typeName === "ZodDefault") {
 			defaultValue = definition._def.defaultValue();
 			definition = definition._def.innerType as SupportedType;
-			continue;
 		}
 		if (definition._def.typeName === "ZodNullable") {
 			nullable = true;
 			definition = (definition as ZodNullable<SupportedType>)._def.innerType as SupportedType;
-			continue;
 		}
-		break;
 	}
 
 	return { defaultValue, definition, nullable, optional };

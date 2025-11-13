@@ -262,5 +262,22 @@ describe("Creating schema", () => {
 			const { schema } = createSchema(NullableSchema, "nullable", mongoose.connection);
 			expect(schema.obj.deletedAt).toEqual({ type: String, default: null });
 		});
+
+		it("should handle nullable and optional fields", () => {
+			const NullableSchema = z.object({
+				deletedAt: z.string().nullable().optional().describe(
+					JSON.stringify({
+						description: 'If tenant is deleted, this will have the ISO date of when it has occured',
+						meta: {
+							static: true,
+							hidden: true,
+						},
+					}),
+				),
+			});
+
+			const { schema } = createSchema(NullableSchema, "nullable-optional", mongoose.connection);
+			expect(schema.obj.deletedAt).toEqual({ type: String, default: null });
+		});
 	});
 });
