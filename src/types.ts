@@ -4,6 +4,7 @@ import type {
 	ZodDate,
 	ZodDefault,
 	ZodEnum,
+	ZodNullable,
 	ZodNumber,
 	ZodObject,
 	ZodOptional,
@@ -31,6 +32,7 @@ export type SupportedType =
 	| ZodArray<ZodTypeAny>
 	| ZodDefault<ZodTypeAny>
 	| ZodEnum<[string, ...string[]]>
+	| ZodNullable<ZodTypeAny>
 	| ZodObject<ZodRawShape>
 	| ZodOptional<ZodTypeAny>
 	| ZodUnion<readonly [ZodTypeAny, ...ZodTypeAny[]]>;

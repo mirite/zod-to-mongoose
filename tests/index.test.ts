@@ -244,4 +244,23 @@ describe("Creating schema", () => {
 			expect(customPropertyMapping.useCase).toEqual({ type: String, enum: ['edit', 'readOnly'] });
 		});
 	});
+
+	describe("Nullable Schemas", () => {
+		it("should handle nullable fields", () => {
+			const NullableSchema = z.object({
+				deletedAt: z.string().optional().nullable().describe(
+					JSON.stringify({
+						description: 'If tenant is deleted, this will have the ISO date of when it has occured',
+						meta: {
+							static: true,
+							hidden: true,
+						},
+					}),
+				),
+			});
+
+			const { schema } = createSchema(NullableSchema, "nullable", mongoose.connection);
+			expect(schema.obj.deletedAt).toEqual({ type: String, default: null });
+		});
+	});
 });
