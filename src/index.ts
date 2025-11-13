@@ -1,5 +1,5 @@
 import type { SchemaDefinition } from "mongoose";
-import type { z, ZodArray, ZodObject, ZodRawShape } from "zod";
+import type { z, ZodArray, ZodEnum, ZodObject, ZodOptional, ZodRawShape } from "zod";
 
 import * as Mongoose from "mongoose";
 
@@ -69,6 +69,12 @@ function convertField<T extends ZodRawShape>(type: string, zodField: T[Extract<k
 		case "ZodDate":
 			coreType = Date;
 			break;
+		case "ZodEnum":
+			coreType = {
+				enum: (unwrappedData.definition as ZodEnum<[string, ...string[]]>)._def.values,
+				type: String,
+			};
+			break;
 		case "ZodNumber":
 			coreType = Number;
 			break;
@@ -114,13 +120,18 @@ function isZodObject(definition: SupportedType): definition is ZodObject<ZodRawS
  */
 function unwrapType(data: SupportedType): { defaultValue?: unknown; definition: SupportedType; optional: boolean; } {
 	let definition = data;
-	const optional = false;
+	let optional = false;
 	let defaultValue = undefined;
-	while ("innerType" in definition._def) {
-		if ("defaultValue" in definition._def) {
+
+	while (definition._def.typeName === "ZodDefault" || definition._def.typeName === "ZodOptional") {
+		if (definition._def.typeName === "ZodDefault") {
 			defaultValue = definition._def.defaultValue();
+		}
+		if (definition._def.typeName === "ZodOptional") {
+			optional = true;
 		}
 		definition = definition._def.innerType;
 	}
+
 	return { defaultValue, definition, optional };
 }

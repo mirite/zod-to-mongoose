@@ -185,4 +185,59 @@ describe("Creating schema", () => {
 			expect(result2.salutation).toBe("Custom");
 		});
 	});
+
+	describe("Complex Schemas", () => {
+		it("should handle the customPropertyMapping schema", () => {
+			const CustomPropertyMappingSchema = z.object({
+				sectionTitle: z.string().optional().describe(
+					JSON.stringify({
+						description: "The section title for grouping related properties in the UI",
+					}),
+				),
+				propertyKey: z.string().describe(
+					JSON.stringify({
+						description: "The third party property key (can be nested using dot notation, e.g., 'properties.custom_field')",
+					}),
+				),
+				displayTitle: z.string().describe(
+					JSON.stringify({
+						description: "The display title shown in the UI",
+					}),
+				),
+				type: z.enum(['text', 'enum-single', 'enum-multi']).describe(
+					JSON.stringify({
+						description: "The field type: text (string input), enum-single (dropdown), enum-multi (multi-select)",
+					}),
+				),
+				enum_options: z.array(z.string()).optional().describe(
+					JSON.stringify({
+						description: "Available options for enum-single and enum-multi types",
+					}),
+				),
+				useCase: z.enum(['edit', 'readOnly']).describe(
+					JSON.stringify({
+						description: "Whether the field is editable or read-only in the UI",
+					}),
+				),
+				required: z.boolean().optional().describe(
+					JSON.stringify({
+						description: "Whether the field is required",
+					}),
+				),
+			});
+
+			const TestSchema = z.object({
+				customPropertyMapping: z.array(CustomPropertyMappingSchema).optional().describe(
+					JSON.stringify({
+						description: "Custom property mappings for advanced field configuration with sections and editable fields",
+					}),
+				),
+			});
+
+			const { schema } = createSchema(TestSchema, "complex", mongoose.connection);
+			const customPropertyMapping = schema.obj.customPropertyMapping[0];
+			expect(customPropertyMapping.type).toEqual({ type: String, enum: ['text', 'enum-single', 'enum-multi'] });
+			expect(customPropertyMapping.useCase).toEqual({ type: String, enum: ['edit', 'readOnly'] });
+		});
+	});
 });
