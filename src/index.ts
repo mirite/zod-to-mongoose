@@ -1,6 +1,14 @@
 import type { SchemaDefinition } from "mongoose";
 import * as Mongoose from "mongoose";
-import { ZodFirstPartyTypeKind, type z, type ZodArray, type ZodObject, type ZodRawShape } from "zod";
+import {
+	EnumLike,
+	ZodFirstPartyTypeKind,
+	type z,
+	type ZodArray,
+	type ZodNativeEnum,
+	type ZodObject,
+	type ZodRawShape,
+} from "zod";
 
 import type { SupportedType } from "./types";
 
@@ -10,23 +18,7 @@ import type { SupportedType } from "./types";
  *
  * @internal
  */
-type MongooseSchemaType =
-	| Mongoose.Schema
-	| MongooseSchemaType[]
-	| typeof Boolean
-	| typeof Date
-	| typeof Number
-	// This covers both a schema definition for a sub-document and the empty
-	// object `{}` used for Mixed types.
-	| typeof String
-	// This covers an array of sub-documents or an array of primitives.
-	// Mongoose expects an array with a single element defining the type.
-	| { [key: string]: MongooseSchemaType }
-	// This covers the object format for specifying a default value.
-	| {
-			default?: unknown;
-			type: MongooseSchemaType;
-	  };
+type MongooseSchemaType = Mongoose.SchemaDefinitionProperty;
 export function createSchema<T extends ZodRawShape>(
 	zodObject: ZodObject<T>,
 	modelName: string,
@@ -91,6 +83,24 @@ function convertField<T extends ZodRawShape>(type: string, zodField: T[Extract<k
 		case ZodFirstPartyTypeKind.ZodDate:
 			coreType = Date;
 			break;
+		case ZodFirstPartyTypeKind.ZodDefault:
+			break;
+		case ZodFirstPartyTypeKind.ZodEnum: {
+			const enumType = unwrappedData.definition as unknown as z.ZodEnum<[string, ...string[]]>;
+			coreType = {
+				enum: enumType.options,
+				type: String,
+			};
+			break;
+		}
+		case ZodFirstPartyTypeKind.ZodNativeEnum: {
+			const enumType = unwrappedData.definition as unknown as ZodNativeEnum<EnumLike>;
+			coreType = {
+				enum: getValidEnumValues(enumType.enum),
+				type: String,
+			};
+			break;
+		}
 		case ZodFirstPartyTypeKind.ZodNumber:
 			coreType = Number;
 			break;
@@ -100,7 +110,7 @@ function convertField<T extends ZodRawShape>(type: string, zodField: T[Extract<k
 			coreType = String;
 			break;
 		case ZodFirstPartyTypeKind.ZodUnion:
-			coreType = {};
+			coreType = Mongoose.SchemaTypes.Mixed;
 			break;
 		default:
 			throw new TypeError(`Unsupported type: ${type}`);
@@ -111,13 +121,23 @@ function convertField<T extends ZodRawShape>(type: string, zodField: T[Extract<k
 	if (coreType === undefined) {
 		throw new TypeError(`Could not determine Mongoose type for Zod type: ${type}`);
 	}
-	if (!unwrappedData.defaultValue) {
-		return coreType;
+
+	const hasDefaultValue = unwrappedData.defaultValue !== undefined;
+
+	if (unwrappedData.nullable && !hasDefaultValue) {
+		return {
+			default: null,
+			type: coreType,
+		};
 	}
-	return {
-		default: unwrappedData.defaultValue,
-		type: coreType,
-	};
+
+	if (hasDefaultValue) {
+		return {
+			default: unwrappedData.defaultValue,
+			type: coreType,
+		};
+	}
+	return coreType;
 }
 
 /**
@@ -129,6 +149,27 @@ function convertField<T extends ZodRawShape>(type: string, zodField: T[Extract<k
 function isZodObject(definition: SupportedType): definition is ZodObject<ZodRawShape> {
 	return definition._def.typeName === ZodFirstPartyTypeKind.ZodObject;
 }
+function isZodDefault(definition: z.ZodTypeAny): definition is z.ZodDefault<SupportedType> {
+	return definition._def.typeName === ZodFirstPartyTypeKind.ZodDefault;
+}
+
+function isZodNullable(definition: z.ZodTypeAny): definition is z.ZodNullable<SupportedType> {
+	return definition._def.typeName === ZodFirstPartyTypeKind.ZodNullable;
+}
+
+function isZodOptional(definition: z.ZodTypeAny): definition is z.ZodOptional<SupportedType> {
+	return definition._def.typeName === ZodFirstPartyTypeKind.ZodOptional;
+}
+
+function getValidEnumValues(obj: { [s: string]: unknown }): (string | number)[] {
+	const validKeys = Object.keys(obj).filter((k) => typeof obj[k] === "number" || typeof obj[k] === "string");
+	const filtered: { [s: string]: unknown } = {};
+	for (const k of validKeys) {
+		filtered[k] = obj[k];
+	}
+
+	return Object.values(filtered).filter((v) => typeof v === "string" || typeof v === "number");
+}
 
 /**
  * Takes a complex type and returns the inner type definition along with the default if present.
@@ -136,15 +177,27 @@ function isZodObject(definition: SupportedType): definition is ZodObject<ZodRawS
  * @param data The type data to unwrap.
  * @returns The inner type data along with the default if present.
  */
-function unwrapType(data: SupportedType): { defaultValue?: unknown; definition: SupportedType; optional: boolean } {
+function unwrapType(data: SupportedType): {
+	defaultValue?: unknown;
+	definition: SupportedType;
+	nullable: boolean;
+	optional: boolean;
+} {
 	let definition = data;
-	const optional = false;
-	let defaultValue = undefined;
+	let nullable = false;
+	let optional = false;
+	let defaultValue: unknown | undefined;
 	while ("innerType" in definition._def) {
-		if ("defaultValue" in definition._def) {
+		if (isZodNullable(definition)) {
+			nullable = true;
+		}
+		if (isZodOptional(definition)) {
+			optional = true;
+		}
+		if (isZodDefault(definition)) {
 			defaultValue = definition._def.defaultValue();
 		}
 		definition = definition._def.innerType;
 	}
-	return { defaultValue, definition, optional };
+	return { defaultValue, definition, nullable, optional };
 }
