@@ -1,6 +1,7 @@
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import type { SchemaDefinition, SchemaTypeOptions } from "mongoose";
-import { ZodNullable, ZodOptional } from "zod";
-import type { z, ZodArray, ZodEnum, ZodNativeEnum, ZodObject, ZodRawShape, ZodTypeAny } from "zod";
+import { ZodFirstPartyTypeKind, type z, type ZodArray, type ZodEnum, type ZodNativeEnum, type ZodNullable, type ZodObject, type ZodOptional, type ZodRawShape, type ZodTypeAny } from "zod";
 
 import * as Mongoose from "mongoose";
 
@@ -52,7 +53,7 @@ function convertField<T extends ZodRawShape>(
 	const unwrappedData = unwrapType(zodField);
 	let coreType;
 	switch (unwrappedData.definition._def.typeName) {
-		case "ZodArray": {
+		case ZodFirstPartyTypeKind.ZodArray: {
 			const arrayType = unwrappedData.definition as ZodArray<SupportedType>;
 			const elementType = arrayType._def.type;
 			if (isZodObject(elementType)) {
@@ -67,39 +68,44 @@ function convertField<T extends ZodRawShape>(
 			}
 			break;
 		}
-		case "ZodBoolean":
+		case ZodFirstPartyTypeKind.ZodBoolean:
 			coreType = Boolean;
 			break;
-		case "ZodDate":
+		case ZodFirstPartyTypeKind.ZodDate:
 			coreType = Date;
 			break;
-		case "ZodEnum":
+		case ZodFirstPartyTypeKind.ZodEnum:
 			coreType = {
 				enum: (unwrappedData.definition as ZodEnum<[string, ...string[]]>)._def.values,
 				type: String,
 			};
 			break;
-		case "ZodNativeEnum":
+		case ZodFirstPartyTypeKind.ZodNativeEnum:
 			coreType = {
 				enum: Object.values((unwrappedData.definition as ZodNativeEnum<any>)._def.values),
 				type: String,
 			};
 			break;
-		case "ZodNumber":
+		case ZodFirstPartyTypeKind.ZodNumber:
 			coreType = Number;
 			break;
-		case "ZodObject":
+		case ZodFirstPartyTypeKind.ZodObject:
 			break;
-		case "ZodString":
+		case ZodFirstPartyTypeKind.ZodString:
 			coreType = String;
 			break;
-		case "ZodUnion": {
-			const types = (unwrappedData.definition._def as any).options;
-			const nullish = types.find((t: any) => t._def.typeName === "ZodNull");
+		case ZodFirstPartyTypeKind.ZodUnion: {
+			const types = unwrappedData.definition._def.options;
+			const nullish = types.find((t) => t._def.typeName === "ZodNull");
 			if (nullish) {
-				const otherType = types.find((t: any) => t._def.typeName !== "ZodNull");
+				const otherType = types.find((t) => t._def.typeName !== "ZodNull");
+
+                if (!otherType) {
+                    throw new TypeError(`Unsupported union type for field ${type}`);
+                }
+
 				const converted = convertField(type, otherType);
-				(converted as any).default = null;
+				(converted).default = null;
 				coreType = converted;
 				break;
 			}
@@ -154,21 +160,21 @@ function unwrapType(
 	let defaultValue = undefined;
 
 	while (
-		definition._def.typeName === "ZodOptional" ||
-		definition._def.typeName === "ZodDefault" ||
-		definition._def.typeName === "ZodNullable"
+		definition._def.typeName === ZodFirstPartyTypeKind.ZodOptional ||
+		definition._def.typeName === ZodFirstPartyTypeKind.ZodDefault ||
+		definition._def.typeName === ZodFirstPartyTypeKind.ZodNullable
 	) {
-		if (definition._def.typeName === "ZodOptional") {
+		if (definition._def.typeName === ZodFirstPartyTypeKind.ZodOptional) {
 			optional = true;
-			definition = (definition as ZodOptional<SupportedType>)._def.innerType as SupportedType;
+			definition = (definition as ZodOptional<SupportedType>)._def.innerType;
 		}
-		if (definition._def.typeName === "ZodDefault") {
+		if (definition._def.typeName === ZodFirstPartyTypeKind.ZodDefault) {
 			defaultValue = definition._def.defaultValue();
 			definition = definition._def.innerType as SupportedType;
 		}
-		if (definition._def.typeName === "ZodNullable") {
+		if (definition._def.typeName === ZodFirstPartyTypeKind.ZodNullable) {
 			nullable = true;
-			definition = (definition as ZodNullable<SupportedType>)._def.innerType as SupportedType;
+			definition = (definition as ZodNullable<SupportedType>)._def.innerType;
 		}
 	}
 
