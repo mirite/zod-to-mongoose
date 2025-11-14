@@ -27,6 +27,7 @@ vi.mock("mongoose", () => {
 		Schema: vi.fn((schemaDefinition) => ({
 			obj: schemaDefinition, // Store the schema definition for access
 		})),
+		SchemaTypes: { Mixed: {} },
 	};
 });
 
