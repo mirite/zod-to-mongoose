@@ -191,49 +191,17 @@ describe("Creating schema", () => {
 	describe("Complex Schemas", () => {
 		it("should handle the customPropertyMapping schema", () => {
 			const CustomPropertyMappingSchema = z.object({
-				sectionTitle: z.string().optional().describe(
-					JSON.stringify({
-						description: "The section title for grouping related properties in the UI",
-					}),
-				),
-				propertyKey: z.string().describe(
-					JSON.stringify({
-						description: "The third party property key (can be nested using dot notation, e.g., 'properties.custom_field')",
-					}),
-				),
-				displayTitle: z.string().describe(
-					JSON.stringify({
-						description: "The display title shown in the UI",
-					}),
-				),
-				type: z.enum(['text', 'enum-single', 'enum-multi']).describe(
-					JSON.stringify({
-						description: "The field type: text (string input), enum-single (dropdown), enum-multi (multi-select)",
-					}),
-				),
-				enum_options: z.array(z.string()).optional().describe(
-					JSON.stringify({
-						description: "Available options for enum-single and enum-multi types",
-					}),
-				),
-				useCase: z.enum(['edit', 'readOnly']).describe(
-					JSON.stringify({
-						description: "Whether the field is editable or read-only in the UI",
-					}),
-				),
-				required: z.boolean().optional().describe(
-					JSON.stringify({
-						description: "Whether the field is required",
-					}),
-				),
+				sectionTitle: z.string().optional(),
+				propertyKey: z.string(),
+				displayTitle: z.string(),
+				type: z.enum(['text', 'enum-single', 'enum-multi']),
+				enum_options: z.array(z.string()).optional(),
+				useCase: z.enum(['edit', 'readOnly']),
+				required: z.boolean().optional(),
 			});
 
 			const TestSchema = z.object({
-				customPropertyMapping: z.array(CustomPropertyMappingSchema).optional().describe(
-					JSON.stringify({
-						description: "Custom property mappings for advanced field configuration with sections and editable fields",
-					}),
-				),
+				customPropertyMapping: z.array(CustomPropertyMappingSchema).optional(),
 			});
 
 			const { schema } = createSchema(TestSchema, "complex", mongoose.connection);
@@ -248,15 +216,7 @@ describe("Creating schema", () => {
 	describe("Nullable Schemas", () => {
 		it("should handle nullable fields", () => {
 			const NullableSchema = z.object({
-				deletedAt: z.string().optional().nullable().describe(
-					JSON.stringify({
-						description: 'If tenant is deleted, this will have the ISO date of when it has occured',
-						meta: {
-							static: true,
-							hidden: true,
-						},
-					}),
-				),
+				deletedAt: z.string().optional().nullable(),
 			});
 
 			const { schema } = createSchema(NullableSchema, "nullable", mongoose.connection);
@@ -265,15 +225,7 @@ describe("Creating schema", () => {
 
 		it("should handle nullable and optional fields", () => {
 			const NullableSchema = z.object({
-				deletedAt: z.string().nullable().optional().describe(
-					JSON.stringify({
-						description: 'If tenant is deleted, this will have the ISO date of when it has occured',
-						meta: {
-							static: true,
-							hidden: true,
-						},
-					}),
-				),
+				deletedAt: z.string().nullable().optional(),
 			});
 
 			const { schema } = createSchema(NullableSchema, "nullable-optional", mongoose.connection);
