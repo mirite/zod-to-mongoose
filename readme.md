@@ -66,6 +66,7 @@ Only a subset of Zod types are supported. The following types are supported:
 - `z.boolean()`
 - `z.date()`
 - `z.enum()`
+- `z.nativeEnum()`
 - `z.nullable()`
 - `z.object()` (Nested objects are supported)
 - `z.array()` (Arrays of primitives and objects are supported)

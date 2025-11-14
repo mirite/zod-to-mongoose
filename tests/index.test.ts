@@ -232,4 +232,19 @@ describe("Creating schema", () => {
 			expect(schema.obj.deletedAt).toEqual({ type: String, default: null });
 		});
 	});
+
+	describe("Native Enums", () => {
+		it("should handle native enums", () => {
+			enum UseCase {
+				edit = 'edit',
+				readOnly = 'readOnly',
+			}
+			const NativeEnumSchema = z.object({
+				useCase: z.nativeEnum(UseCase),
+			});
+
+			const { schema } = createSchema(NativeEnumSchema, "native-enum", mongoose.connection);
+			expect(schema.obj.useCase).toEqual({ type: String, enum: ['edit', 'readOnly'] });
+		});
+	});
 });

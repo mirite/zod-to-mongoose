@@ -1,6 +1,6 @@
 import type { SchemaDefinition, SchemaTypeOptions } from "mongoose";
 import { ZodNullable, ZodOptional } from "zod";
-import type { z, ZodArray, ZodEnum, ZodObject, ZodRawShape, ZodTypeAny } from "zod";
+import type { z, ZodArray, ZodEnum, ZodNativeEnum, ZodObject, ZodRawShape, ZodTypeAny } from "zod";
 
 import * as Mongoose from "mongoose";
 
@@ -76,6 +76,12 @@ function convertField<T extends ZodRawShape>(
 		case "ZodEnum":
 			coreType = {
 				enum: (unwrappedData.definition as ZodEnum<[string, ...string[]]>)._def.values,
+				type: String,
+			};
+			break;
+		case "ZodNativeEnum":
+			coreType = {
+				enum: Object.values((unwrappedData.definition as ZodNativeEnum<any>)._def.values),
 				type: String,
 			};
 			break;

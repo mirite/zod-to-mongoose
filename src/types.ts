@@ -12,6 +12,7 @@ import type {
 	ZodString,
 	ZodTypeAny,
 	ZodUnion,
+	ZodNativeEnum,
 } from "zod";
 
 export type Check = "";
@@ -35,5 +36,6 @@ export type SupportedType =
 	| ZodNullable<ZodTypeAny>
 	| ZodObject<ZodRawShape>
 	| ZodOptional<ZodTypeAny>
-	| ZodUnion<readonly [ZodTypeAny, ...ZodTypeAny[]]>;
+	| ZodUnion<readonly [ZodTypeAny, ...ZodTypeAny[]]>
+	| ZodNativeEnum<any>;
 type SupportedPrimitive = ZodBoolean | ZodDate | ZodNumber | ZodString;
