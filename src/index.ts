@@ -91,6 +91,22 @@ function convertField<T extends ZodRawShape>(type: string, zodField: T[Extract<k
 		case ZodFirstPartyTypeKind.ZodDate:
 			coreType = Date;
 			break;
+		case ZodFirstPartyTypeKind.ZodEnum: {
+			const enumType = unwrappedData.definition as z.ZodEnum<[string, ...string[]]>;
+			coreType = {
+				enum: enumType.options,
+				type: String,
+			};
+			break;
+		}
+		case ZodFirstPartyTypeKind.ZodNativeEnum: {
+			const enumType = unwrappedData.definition as z.ZodNativeEnum<Record<string, unknown>>;
+			coreType = {
+				enum: Object.values(enumType.enum),
+				type: String,
+			};
+			break;
+		}
 		case ZodFirstPartyTypeKind.ZodNumber:
 			coreType = Number;
 			break;
@@ -111,13 +127,23 @@ function convertField<T extends ZodRawShape>(type: string, zodField: T[Extract<k
 	if (coreType === undefined) {
 		throw new TypeError(`Could not determine Mongoose type for Zod type: ${type}`);
 	}
-	if (!unwrappedData.defaultValue) {
-		return coreType;
+
+	const hasDefaultValue = unwrappedData.defaultValue !== undefined;
+
+	if (unwrappedData.nullable && !hasDefaultValue) {
+		return {
+			default: null,
+			type: coreType,
+		};
 	}
-	return {
-		default: unwrappedData.defaultValue,
-		type: coreType,
-	};
+
+	if (hasDefaultValue) {
+		return {
+			default: unwrappedData.defaultValue,
+			type: coreType,
+		};
+	}
+	return coreType;
 }
 
 /**
@@ -136,15 +162,27 @@ function isZodObject(definition: SupportedType): definition is ZodObject<ZodRawS
  * @param data The type data to unwrap.
  * @returns The inner type data along with the default if present.
  */
-function unwrapType(data: SupportedType): { defaultValue?: unknown; definition: SupportedType; optional: boolean } {
+function unwrapType(data: SupportedType): {
+	defaultValue?: unknown;
+	definition: SupportedType;
+	nullable: boolean;
+	optional: boolean;
+} {
 	let definition = data;
-	const optional = false;
-	let defaultValue = undefined;
+	let nullable = false;
+	let optional = false;
+	let defaultValue: unknown | undefined;
 	while ("innerType" in definition._def) {
+		if (definition._def.typeName === ZodFirstPartyTypeKind.ZodNullable) {
+			nullable = true;
+		}
+		if (definition._def.typeName === ZodFirstPartyTypeKind.ZodOptional) {
+			optional = true;
+		}
 		if ("defaultValue" in definition._def) {
 			defaultValue = definition._def.defaultValue();
 		}
 		definition = definition._def.innerType;
 	}
-	return { defaultValue, definition, optional };
+	return { defaultValue, definition, nullable, optional };
 }
