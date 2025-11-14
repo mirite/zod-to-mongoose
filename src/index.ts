@@ -1,16 +1,38 @@
 import type { SchemaDefinition, SchemaTypeOptions } from "mongoose";
-import { ZodNullable, ZodOptional } from "zod";
-import type { z, ZodArray, ZodEnum, ZodObject, ZodRawShape, ZodTypeAny } from "zod";
 
 import * as Mongoose from "mongoose";
+import { ZodFirstPartyTypeKind, type z, type ZodArray, type ZodObject, type ZodRawShape } from "zod";
 
 import type { SupportedType } from "./types";
 
+/**
+ * Represents a valid type for a Mongoose schema field definition. This is a recursive type that handles all possible
+ * valid structures for a schema property, including nested objects and arrays.
+ *
+ * @internal
+ */
+type MongooseSchemaType =
+	| Mongoose.Schema
+	| MongooseSchemaType[]
+	| typeof Boolean
+	| typeof Date
+	| typeof Number
+	// This covers both a schema definition for a sub-document and the empty
+	// object `{}` used for Mixed types.
+	| typeof String
+	// This covers an array of sub-documents or an array of primitives.
+	// Mongoose expects an array with a single element defining the type.
+	| { [key: string]: MongooseSchemaType }
+	// This covers the object format for specifying a default value.
+	| {
+			default?: unknown;
+			type: MongooseSchemaType;
+	  };
 export function createSchema<T extends ZodRawShape>(
 	zodObject: ZodObject<T>,
 	modelName: string,
 	connection: Mongoose.Connection,
-): { model: Mongoose.Model<z.infer<typeof zodObject>>; schema: Mongoose.Schema; };
+): { model: Mongoose.Model<z.infer<typeof zodObject>>; schema: Mongoose.Schema };
 export function createSchema<T extends ZodRawShape>(zodObject: ZodObject<T>): Mongoose.Schema;
 /**
  * Create a Mongoose schema from a Zod shape
@@ -25,7 +47,7 @@ export function createSchema<T extends ZodRawShape>(
 	zodObject: ZodObject<T>,
 	modelName?: string,
 	connection?: Mongoose.Connection,
-): Mongoose.Schema | { model: Mongoose.Model<z.infer<typeof zodObject>>; schema: Mongoose.Schema; } {
+): Mongoose.Schema | { model: Mongoose.Model<z.infer<typeof zodObject>>; schema: Mongoose.Schema } {
 	const convertedShape: Partial<SchemaDefinition> = {};
 	for (const key in zodObject.shape) {
 		const zodField = zodObject.shape[key];
@@ -48,16 +70,16 @@ export function createSchema<T extends ZodRawShape>(
 function convertField<T extends ZodRawShape>(
 	type: string,
 	zodField: T[Extract<keyof T, string>],
-): SchemaTypeOptions<unknown> {
+): MongooseSchemaType {
 	const unwrappedData = unwrapType(zodField);
-	let coreType;
+	let coreType: MongooseSchemaType | undefined;
 	switch (unwrappedData.definition._def.typeName) {
-		case "ZodArray": {
+		case ZodFirstPartyTypeKind.ZodArray: {
 			const arrayType = unwrappedData.definition as ZodArray<SupportedType>;
 			const elementType = arrayType._def.type;
 			if (isZodObject(elementType)) {
 				const shape = elementType.shape;
-				const convertedShape: SchemaDefinition = {};
+				const convertedShape: { [key: string]: MongooseSchemaType } = {};
 				for (const key in shape) {
 					convertedShape[key] = convertField(key, shape[key]);
 				}
@@ -67,36 +89,26 @@ function convertField<T extends ZodRawShape>(
 			}
 			break;
 		}
-		case "ZodBoolean":
+		case ZodFirstPartyTypeKind.ZodBoolean:
 			coreType = Boolean;
 			break;
-		case "ZodDate":
+		case ZodFirstPartyTypeKind.ZodDate:
 			coreType = Date;
 			break;
-		case "ZodEnum":
+		case ZodFirstPartyTypeKind.ZodEnum:
 			coreType = {
-				enum: (unwrappedData.definition as ZodEnum<[string, ...string[]]>)._def.values,
 				type: String,
 			};
 			break;
-		case "ZodNumber":
+		case ZodFirstPartyTypeKind.ZodNumber:
 			coreType = Number;
 			break;
-		case "ZodObject":
+		case ZodFirstPartyTypeKind.ZodObject:
 			break;
-		case "ZodString":
+		case ZodFirstPartyTypeKind.ZodString:
 			coreType = String;
 			break;
-		case "ZodUnion": {
-			const types = (unwrappedData.definition._def as any).options;
-			const nullish = types.find((t: any) => t._def.typeName === "ZodNull");
-			if (nullish) {
-				const otherType = types.find((t: any) => t._def.typeName !== "ZodNull");
-				const converted = convertField(type, otherType);
-				(converted as any).default = null;
-				coreType = converted;
-				break;
-			}
+		case ZodFirstPartyTypeKind.ZodUnion: {
 			coreType = {};
 			break;
 		}
@@ -107,11 +119,8 @@ function convertField<T extends ZodRawShape>(
 		coreType = createSchema(unwrappedData.definition);
 	}
 
-	if (unwrappedData.nullable) {
-		return {
-			default: null,
-			type: coreType as SchemaTypeOptions<unknown>,
-		};
+	if (coreType === undefined) {
+		throw new TypeError(`Could not determine Mongoose type for Zod type: ${type}`);
 	}
 
 	if (!unwrappedData.defaultValue) {
@@ -129,8 +138,8 @@ function convertField<T extends ZodRawShape>(
  * @param definition The Zod definition to check
  * @returns Whether the definition is an object
  */
-function isZodObject(definition: ZodTypeAny): definition is ZodObject<ZodRawShape> {
-	return definition._def.typeName === "ZodObject";
+function isZodObject(definition: SupportedType): definition is ZodObject<ZodRawShape> {
+	return definition._def.typeName === ZodFirstPartyTypeKind.ZodObject;
 }
 
 /**
@@ -139,32 +148,15 @@ function isZodObject(definition: ZodTypeAny): definition is ZodObject<ZodRawShap
  * @param data The type data to unwrap.
  * @returns The inner type data along with the default if present.
  */
-function unwrapType(
-	data: SupportedType,
-): { defaultValue?: unknown; definition: SupportedType; nullable: boolean; optional: boolean; } {
-	let definition: SupportedType = data;
-	let optional = false;
-	let nullable = false;
-	let defaultValue = undefined;
-
-	while (
-		definition._def.typeName === "ZodOptional" ||
-		definition._def.typeName === "ZodDefault" ||
-		definition._def.typeName === "ZodNullable"
-	) {
-		if (definition._def.typeName === "ZodOptional") {
-			optional = true;
-			definition = (definition as ZodOptional<SupportedType>)._def.innerType as SupportedType;
-		}
-		if (definition._def.typeName === "ZodDefault") {
+function unwrapType(data: SupportedType): { defaultValue?: unknown; definition: SupportedType; optional: boolean } {
+	let definition = data;
+	const optional = false;
+	let defaultValue: unknown = undefined;
+	while ("innerType" in definition._def) {
+		if ("defaultValue" in definition._def) {
 			defaultValue = definition._def.defaultValue();
-			definition = definition._def.innerType as SupportedType;
 		}
-		if (definition._def.typeName === "ZodNullable") {
-			nullable = true;
-			definition = (definition as ZodNullable<SupportedType>)._def.innerType as SupportedType;
-		}
+		definition = definition._def.innerType;
 	}
-
-	return { defaultValue, definition, nullable, optional };
+	return { defaultValue, definition, optional };
 }
