@@ -1,14 +1,6 @@
 import type { SchemaDefinition } from "mongoose";
 import * as Mongoose from "mongoose";
-import {
-	EnumLike,
-	ZodFirstPartyTypeKind,
-	type z,
-	type ZodArray,
-	type ZodNativeEnum,
-	type ZodObject,
-	type ZodRawShape,
-} from "zod";
+import type { z, ZodArray, ZodObject, ZodRawShape, ZodType } from "zod";
 
 import type { SupportedType } from "./types";
 
@@ -56,15 +48,15 @@ export function createSchema<T extends ZodRawShape>(
  * @param type The key of the field
  * @param zodField The Zod field to convert
  * @returns The Mongoose type
- * @throws TypeError If the type is not supported.
+ * @throws {TypeError} If the type is not supported.
  */
 function convertField<T extends ZodRawShape>(type: string, zodField: T[Extract<keyof T, string>]): MongooseSchemaType {
 	const unwrappedData = unwrapType(zodField);
 	let coreType: MongooseSchemaType | undefined;
-	switch (unwrappedData.definition._def.typeName) {
-		case ZodFirstPartyTypeKind.ZodArray: {
+	switch (unwrappedData.definition.type) {
+		case "array": {
 			const arrayType = unwrappedData.definition as ZodArray<SupportedType>;
-			const elementType = arrayType._def.type;
+			const elementType = arrayType.def;
 			if (isZodObject(elementType)) {
 				const shape = elementType.shape;
 				const convertedShape: { [key: string]: MongooseSchemaType } = {};
@@ -77,39 +69,31 @@ function convertField<T extends ZodRawShape>(type: string, zodField: T[Extract<k
 			}
 			break;
 		}
-		case ZodFirstPartyTypeKind.ZodBoolean:
+		case "boolean":
 			coreType = Boolean;
 			break;
-		case ZodFirstPartyTypeKind.ZodDate:
+		case "date":
 			coreType = Date;
 			break;
-		case ZodFirstPartyTypeKind.ZodDefault:
+		case "default":
 			break;
-		case ZodFirstPartyTypeKind.ZodEnum: {
-			const enumType = unwrappedData.definition as unknown as z.ZodEnum<[string, ...string[]]>;
+		case "enum": {
+			const enumType = unwrappedData.definition;
 			coreType = {
 				enum: enumType.options,
 				type: String,
 			};
 			break;
 		}
-		case ZodFirstPartyTypeKind.ZodNativeEnum: {
-			const enumType = unwrappedData.definition as unknown as ZodNativeEnum<EnumLike>;
-			coreType = {
-				enum: getValidEnumValues(enumType.enum),
-				type: String,
-			};
-			break;
-		}
-		case ZodFirstPartyTypeKind.ZodNumber:
+		case "number":
 			coreType = Number;
 			break;
-		case ZodFirstPartyTypeKind.ZodObject:
+		case "object":
 			break;
-		case ZodFirstPartyTypeKind.ZodString:
+		case "string":
 			coreType = String;
 			break;
-		case ZodFirstPartyTypeKind.ZodUnion:
+		case "union":
 			coreType = Mongoose.SchemaTypes.Mixed;
 			break;
 		default:
@@ -140,28 +124,7 @@ function convertField<T extends ZodRawShape>(type: string, zodField: T[Extract<k
 	return coreType;
 }
 
-/**
- * Check if a Zod definition is an object
- *
- * @param definition The Zod definition to check
- * @returns Whether the definition is an object
- */
-function isZodObject(definition: SupportedType): definition is ZodObject<ZodRawShape> {
-	return definition._def.typeName === ZodFirstPartyTypeKind.ZodObject;
-}
-function isZodDefault(definition: z.ZodTypeAny): definition is z.ZodDefault<SupportedType> {
-	return definition._def.typeName === ZodFirstPartyTypeKind.ZodDefault;
-}
-
-function isZodNullable(definition: z.ZodTypeAny): definition is z.ZodNullable<SupportedType> {
-	return definition._def.typeName === ZodFirstPartyTypeKind.ZodNullable;
-}
-
-function isZodOptional(definition: z.ZodTypeAny): definition is z.ZodOptional<SupportedType> {
-	return definition._def.typeName === ZodFirstPartyTypeKind.ZodOptional;
-}
-
-function getValidEnumValues(obj: { [s: string]: unknown }): (string | number)[] {
+function getValidEnumValues(obj: { [s: string]: unknown }): (number | string)[] {
 	const validKeys = Object.keys(obj).filter((k) => typeof obj[k] === "number" || typeof obj[k] === "string");
 	const filtered: { [s: string]: unknown } = {};
 	for (const k of validKeys) {
@@ -170,6 +133,30 @@ function getValidEnumValues(obj: { [s: string]: unknown }): (string | number)[] 
 
 	return Object.values(filtered).filter((v) => typeof v === "string" || typeof v === "number");
 }
+/** @param definition */
+function isZodDefault(definition: z.ZodType): definition is z.ZodDefault<SupportedType> {
+	return definition.def.type === "default";
+}
+
+/** @param definition */
+function isZodNullable(definition: z.ZodType): definition is z.ZodNullable<SupportedType> {
+	return definition.def.type === "nullable";
+}
+
+/**
+ * Check if a Zod definition is an object
+ *
+ * @param definition The Zod definition to check
+ * @returns Whether the definition is an object
+ */
+function isZodObject(definition: SupportedType): definition is ZodObject<ZodRawShape> {
+	return definition.def.type === "object";
+}
+
+/** @param definition */
+function isZodOptional(definition: z.ZodType): definition is z.ZodOptional<SupportedType> {
+	return definition.def.type === "optional";
+}
 
 /**
  * Takes a complex type and returns the inner type definition along with the default if present.
@@ -177,7 +164,7 @@ function getValidEnumValues(obj: { [s: string]: unknown }): (string | number)[] 
  * @param data The type data to unwrap.
  * @returns The inner type data along with the default if present.
  */
-function unwrapType(data: SupportedType): {
+function unwrapType(data: ZodType): {
 	defaultValue?: unknown;
 	definition: SupportedType;
 	nullable: boolean;
@@ -186,8 +173,8 @@ function unwrapType(data: SupportedType): {
 	let definition = data;
 	let nullable = false;
 	let optional = false;
-	let defaultValue: unknown | undefined;
-	while ("innerType" in definition._def) {
+	let defaultValue: unknown;
+	while ("innerType" in definition.def) {
 		if (isZodNullable(definition)) {
 			nullable = true;
 		}
@@ -197,7 +184,7 @@ function unwrapType(data: SupportedType): {
 		if (isZodDefault(definition)) {
 			defaultValue = definition._def.defaultValue();
 		}
-		definition = definition._def.innerType;
+		definition = definition.def.type;
 	}
 	return { defaultValue, definition, nullable, optional };
 }

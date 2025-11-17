@@ -1,6 +1,7 @@
 import mongoose, { type SchemaDefinition } from "mongoose";
 import { describe, expect, it, vi } from "vitest";
 import { z } from "zod";
+
 import { createSchema } from "../src";
 
 vi.mock("mongoose", () => {
@@ -33,13 +34,13 @@ vi.mock("mongoose", () => {
 describe("Complex Schemas", () => {
 	it("should handle the customPropertyMapping schema", () => {
 		const CustomPropertyMappingSchema = z.object({
-			sectionTitle: z.string().optional(),
-			propertyKey: z.string(),
 			displayTitle: z.string(),
-			type: z.enum(["text", "enum-single", "enum-multi"]),
 			enum_options: z.array(z.string()).optional(),
-			useCase: z.enum(["edit", "readOnly"]),
+			propertyKey: z.string(),
 			required: z.boolean().optional(),
+			sectionTitle: z.string().optional(),
+			type: z.enum(["text", "enum-single", "enum-multi"]),
+			useCase: z.enum(["edit", "readOnly"]),
 		});
 
 		const TestSchema = z.object({
@@ -50,8 +51,8 @@ describe("Complex Schemas", () => {
 		expect(schema.obj.customPropertyMapping).toBeDefined();
 		if (!schema.obj.customPropertyMapping) return;
 		const customPropertyMapping = (schema.obj.customPropertyMapping as SchemaDefinition[])[0];
-		expect(customPropertyMapping.type).toEqual({ type: String, enum: ["text", "enum-single", "enum-multi"] });
-		expect(customPropertyMapping.useCase).toEqual({ type: String, enum: ["edit", "readOnly"] });
+		expect(customPropertyMapping.type).toEqual({ enum: ["text", "enum-single", "enum-multi"], type: String });
+		expect(customPropertyMapping.useCase).toEqual({ enum: ["edit", "readOnly"], type: String });
 	});
 });
 
@@ -62,7 +63,7 @@ describe("Nullable Schemas", () => {
 		});
 
 		const { schema } = createSchema(NullableSchema, "nullable", mongoose.connection);
-		expect(schema.obj.deletedAt).toEqual({ type: String, default: null });
+		expect(schema.obj.deletedAt).toEqual({ default: null, type: String });
 	});
 
 	it("should handle nullable and optional fields", () => {
@@ -71,7 +72,7 @@ describe("Nullable Schemas", () => {
 		});
 
 		const { schema } = createSchema(NullableSchema, "nullable-optional", mongoose.connection);
-		expect(schema.obj.deletedAt).toEqual({ type: String, default: null });
+		expect(schema.obj.deletedAt).toEqual({ default: null, type: String });
 	});
 });
 
@@ -86,6 +87,6 @@ describe("Native Enums", () => {
 		});
 
 		const { schema } = createSchema(NativeEnumSchema, "native-enum", mongoose.connection);
-		expect(schema.obj.useCase).toEqual({ type: String, enum: ["edit", "readOnly"] });
+		expect(schema.obj.useCase).toEqual({ enum: ["edit", "readOnly"], type: String });
 	});
 });

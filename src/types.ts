@@ -1,18 +1,17 @@
 import type {
-	EnumLike,
+	util,
 	ZodArray,
 	ZodBoolean,
 	ZodDate,
 	ZodDefault,
 	ZodEnum,
-	ZodNativeEnum,
 	ZodNullable,
 	ZodNumber,
 	ZodObject,
 	ZodOptional,
 	ZodRawShape,
 	ZodString,
-	ZodTypeAny,
+	ZodType,
 	ZodUnion,
 } from "zod";
 
@@ -31,12 +30,11 @@ export type FieldDefinition = {
 };
 export type SupportedType =
 	| SupportedPrimitive
-	| ZodArray<ZodTypeAny>
-	| ZodDefault<ZodTypeAny>
-	| ZodEnum<[string, ...string[]]>
-	| ZodNativeEnum<EnumLike>
-	| ZodNullable<ZodTypeAny>
+	| ZodArray<ZodType>
+	| ZodDefault<ZodType>
+	| ZodEnum<Readonly<Record<string, util.EnumValue>>>
+	| ZodNullable<ZodType>
 	| ZodObject<ZodRawShape>
-	| ZodOptional<ZodTypeAny>
-	| ZodUnion<readonly [ZodTypeAny, ...ZodTypeAny[]]>;
+	| ZodOptional<ZodType>
+	| ZodUnion<readonly [ZodType, ...ZodType[]]>;
 type SupportedPrimitive = ZodBoolean | ZodDate | ZodNumber | ZodString;
