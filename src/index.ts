@@ -1,7 +1,9 @@
 import type { Connection, Model, SchemaDefinition, SchemaDefinitionProperty } from "mongoose";
 import { Schema, SchemaTypes } from "mongoose";
-import type { z, ZodRawShape } from "zod";
-import { ZodArray, ZodDefault, ZodEnum, ZodNullable, ZodObject, ZodOptional, ZodType } from "zod";
+import type { z, ZodRawShape , ZodObject} from "zod";
+import { ZodArray, ZodDefault, ZodEnum, ZodNullable, ZodOptional, ZodType } from "zod";
+
+import { isZodArray, isZodDefault, isZodEnum, isZodNullable, isZodObject, isZodOptional } from "./typeGuards";
 
 /**
  * Represents a valid type for a Mongoose schema field definition. This is a recursive type that handles all possible
@@ -132,6 +134,9 @@ function convertField(fieldName: string, zodField: ZodType): MongooseSchemaType 
 	return coreType;
 }
 
+/**
+ *
+ */
 function getValidEnumValues(obj: { [s: string]: unknown }): (number | string)[] {
 	const validKeys = Object.keys(obj).filter((k) => typeof obj[k] === "number" || typeof obj[k] === "string");
 	const filtered: { [s: string]: unknown } = {};
@@ -140,63 +145,6 @@ function getValidEnumValues(obj: { [s: string]: unknown }): (number | string)[] 
 	}
 
 	return Object.values(filtered).filter((v) => typeof v === "string" || typeof v === "number");
-}
-/**
- * Check if a Zod definition is an array
- *
- * @param definition The Zod definition to check
- * @returns Whether the definition is an array
- */
-function isZodArray(definition: ZodType): definition is ZodArray<ZodType> {
-	return definition instanceof ZodArray;
-}
-
-/**
- * Type guard for whether the definition is a default.
- *
- * @param definition The definition to check.
- * @returns True if the definition is a default.
- */
-function isZodDefault(definition: ZodType): definition is ZodDefault {
-	return definition instanceof ZodDefault;
-}
-/**
- * Check if a Zod definition is an enum
- *
- * @param definition The Zod definition to check
- * @returns Whether the definition is an enum
- */
-function isZodEnum(definition: ZodType): definition is ZodEnum {
-	return definition instanceof ZodEnum;
-}
-
-/**
- * Type guard for whether the definition is nullable.
- *
- * @param definition The definition to check.
- * @returns True if the definition is nullable.
- */
-function isZodNullable(definition: ZodType): definition is ZodNullable {
-	return definition instanceof ZodNullable;
-}
-
-/**
- * Check if a Zod definition is an object
- *
- * @param definition The Zod definition to check
- * @returns Whether the definition is an object
- */
-function isZodObject(definition: ZodType): definition is ZodObject<ZodRawShape> {
-	return definition instanceof ZodObject;
-}
-/**
- * Type guard for whether the definition is optional.
- *
- * @param definition The definition to check.
- * @returns True if the definition is optional.
- */
-function isZodOptional(definition: ZodType): definition is ZodOptional {
-	return definition instanceof ZodOptional;
 }
 
 /**
