@@ -54,7 +54,7 @@
 	},
 	"peerDependencies": {
 		"mongoose": "^8",
-		"zod": "^3"
+		"zod": "^4"
 	},
 	"packageManager": "yarn@4.11.0",
 	"issues": "https://github.com/mirite/zod-to-mongoose/issues"
