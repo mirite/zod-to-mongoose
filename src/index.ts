@@ -128,9 +128,6 @@ function convertField(fieldName: string, zodField: ZodType): MongooseSchemaType 
 	return coreType;
 }
 
-/**
- *
- */
 function getValidEnumValues(obj: { [s: string]: unknown }): (number | string)[] {
 	const validKeys = Object.keys(obj).filter((k) => typeof obj[k] === "number" || typeof obj[k] === "string");
 	const filtered: { [s: string]: unknown } = {};
