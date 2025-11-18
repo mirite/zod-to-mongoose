@@ -1,9 +1,7 @@
 import type { Connection, Model, SchemaDefinition, SchemaDefinitionProperty } from "mongoose";
 import { Schema, SchemaTypes } from "mongoose";
 import type { z, ZodRawShape } from "zod";
-import { ZodDefault, ZodNullable, ZodObject, ZodOptional, ZodType } from "zod";
-
-import type { SupportedType } from "./types";
+import { ZodArray, ZodDefault, ZodEnum, ZodNullable, ZodObject, ZodOptional, ZodType } from "zod";
 
 /**
  * Represents a valid type for a Mongoose schema field definition. This is a recursive type that handles all possible
@@ -48,7 +46,6 @@ export function createSchema<T extends ZodRawShape>(
 /**
  * Convert a Zod field to a Mongoose type
  *
- * @template T The Zod schema shape.
  * @param fieldName The key of the field
  * @param zodField The Zod field to convert
  * @returns The Mongoose type
@@ -59,13 +56,18 @@ function convertField(fieldName: string, zodField: ZodType): MongooseSchemaType 
 	let coreType: MongooseSchemaType | undefined;
 	switch (unwrappedData.definition.type) {
 		case "array": {
-			const arrayType = unwrappedData;
-			const elementType = arrayType.element;
+			if (!isZodArray(unwrappedData.definition))
+				throw new TypeError(`Expected ${fieldName} to be of type ZodArray`);
+			const elementType = unwrappedData.definition.element;
 			if (isZodObject(elementType)) {
 				const shape = elementType.shape;
 				const convertedShape: { [key: string]: MongooseSchemaType } = {};
 				for (const key in shape) {
-					convertedShape[key] = convertField(key, shape[key]);
+					const nestedField = shape[key];
+					if (!(nestedField instanceof ZodType)) {
+						continue; // There's metadata in the shape that doesn't represent fields.
+					}
+					convertedShape[key] = convertField(key, nestedField);
 				}
 				coreType = [convertedShape];
 			} else {
@@ -82,6 +84,8 @@ function convertField(fieldName: string, zodField: ZodType): MongooseSchemaType 
 		case "default":
 			break;
 		case "enum": {
+			if (!isZodEnum(unwrappedData.definition))
+				throw new TypeError(`Expected ${fieldName} to be of type ZodEnum`);
 			const enumType = unwrappedData.definition;
 			coreType = {
 				enum: enumType.options,
@@ -138,6 +142,16 @@ function getValidEnumValues(obj: { [s: string]: unknown }): (number | string)[] 
 	return Object.values(filtered).filter((v) => typeof v === "string" || typeof v === "number");
 }
 /**
+ * Check if a Zod definition is an array
+ *
+ * @param definition The Zod definition to check
+ * @returns Whether the definition is an array
+ */
+function isZodArray(definition: ZodType): definition is ZodArray<ZodType> {
+	return definition instanceof ZodArray;
+}
+
+/**
  * Type guard for whether the definition is a default.
  *
  * @param definition The definition to check.
@@ -145,6 +159,15 @@ function getValidEnumValues(obj: { [s: string]: unknown }): (number | string)[] 
  */
 function isZodDefault(definition: ZodType): definition is ZodDefault {
 	return definition instanceof ZodDefault;
+}
+/**
+ * Check if a Zod definition is an enum
+ *
+ * @param definition The Zod definition to check
+ * @returns Whether the definition is an enum
+ */
+function isZodEnum(definition: ZodType): definition is ZodEnum {
+	return definition instanceof ZodEnum;
 }
 
 /**
@@ -166,7 +189,6 @@ function isZodNullable(definition: ZodType): definition is ZodNullable {
 function isZodObject(definition: ZodType): definition is ZodObject<ZodRawShape> {
 	return definition instanceof ZodObject;
 }
-
 /**
  * Type guard for whether the definition is optional.
  *
@@ -185,7 +207,7 @@ function isZodOptional(definition: ZodType): definition is ZodOptional {
  */
 function unwrapType(data: ZodType): {
 	defaultValue?: unknown;
-	definition: SupportedType;
+	definition: ZodType;
 	nullable: boolean;
 	optional: boolean;
 } {
@@ -193,7 +215,7 @@ function unwrapType(data: ZodType): {
 	let nullable = false;
 	let optional = false;
 	let defaultValue: unknown;
-	while ("innerType" in definition.def) {
+	while ("innerType" in definition.def && definition.def.innerType instanceof ZodType) {
 		if (isZodNullable(definition)) {
 			nullable = true;
 		}
@@ -201,9 +223,9 @@ function unwrapType(data: ZodType): {
 			optional = true;
 		}
 		if (isZodDefault(definition)) {
-			defaultValue = definition._def.defaultValue();
+			defaultValue = definition.def.defaultValue;
 		}
-		definition = definition.def.type;
+		definition = definition.def.innerType;
 	}
 	return { defaultValue, definition, nullable, optional };
 }
