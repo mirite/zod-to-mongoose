@@ -6,20 +6,7 @@ import { z } from "zod";
 import { createSchema } from "../src";
 
 const connection: MockedObject<Connection> = vi.mockObject({
-	model: vi.fn((_name: string, schema: Schema) => ({
-		create: vi.fn((doc) => {
-			const result = { _id: "123456789012345678901234", ...doc };
-			// Apply default values from the schema
-			for (const [key, value] of Object.entries(schema.obj)) {
-				if (typeof value === "object" && value) {
-					if ("default" in value && value.default !== undefined && result[key] === undefined) {
-						result[key] = typeof value.default === "function" ? value.default() : value.default;
-					}
-				}
-			}
-			return Promise.resolve(result);
-		}),
-	})),
+	model: vi.fn(),
 } as unknown as Connection);
 
 describe("Complex Schemas", () => {
