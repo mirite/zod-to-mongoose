@@ -1,7 +1,7 @@
 import type { Connection, Model, SchemaDefinition, SchemaDefinitionProperty } from "mongoose";
 import { Schema, SchemaTypes } from "mongoose";
-import type { z, ZodRawShape , ZodObject} from "zod";
-import { ZodArray, ZodDefault, ZodEnum, ZodNullable, ZodOptional, ZodType } from "zod";
+import type { z, ZodObject, ZodRawShape } from "zod";
+import { ZodType } from "zod";
 
 import { isZodArray, isZodDefault, isZodEnum, isZodNullable, isZodObject, isZodOptional } from "./typeGuards";
 
@@ -135,7 +135,10 @@ function convertField(fieldName: string, zodField: ZodType): MongooseSchemaType 
 }
 
 /**
+ * Gets the valid members of an enum.
  *
+ * @param The Enum.
+ * @returns The valid members.
  */
 function getValidEnumValues(obj: { [s: string]: unknown }): (number | string)[] {
 	const validKeys = Object.keys(obj).filter((k) => typeof obj[k] === "number" || typeof obj[k] === "string");

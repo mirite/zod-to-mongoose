@@ -1,35 +1,26 @@
-import mongoose, { type SchemaDefinition } from "mongoose";
+import type { Connection, Schema, SchemaDefinition } from "mongoose";
+import type { MockedObject } from "vitest";
 import { describe, expect, it, vi } from "vitest";
 import { z } from "zod";
 
 import { createSchema } from "../src";
 
-vi.mock("mongoose", () => {
-	return {
-		default: {
-			connection: {
-				model: vi.fn((_name, schema) => ({
-					create: vi.fn((doc) => {
-						const result = { _id: "123456789012345678901234", ...doc };
-						// Apply default values from the schema
-						for (const [key, value] of Object.entries(schema.obj)) {
-							if (typeof value === "object" && value) {
-								if ("default" in value && value.default !== undefined && result[key] === undefined) {
-									result[key] = typeof value.default === "function" ? value.default() : value.default;
-								}
-							}
-						}
-						return Promise.resolve(result);
-					}),
-				})),
-			},
-		},
-		Schema: vi.fn((schemaDefinition) => ({
-			obj: schemaDefinition, // Store the schema definition for access
-		})),
-		SchemaTypes: { Mixed: {} },
-	};
-});
+const connection: MockedObject<Connection> = vi.mockObject({
+	model: vi.fn((_name: string, schema: Schema) => ({
+		create: vi.fn((doc) => {
+			const result = { _id: "123456789012345678901234", ...doc };
+			// Apply default values from the schema
+			for (const [key, value] of Object.entries(schema.obj)) {
+				if (typeof value === "object" && value) {
+					if ("default" in value && value.default !== undefined && result[key] === undefined) {
+						result[key] = typeof value.default === "function" ? value.default() : value.default;
+					}
+				}
+			}
+			return Promise.resolve(result);
+		}),
+	})),
+} as unknown as Connection);
 
 describe("Complex Schemas", () => {
 	it("should handle the customPropertyMapping schema", () => {
@@ -47,7 +38,7 @@ describe("Complex Schemas", () => {
 			customPropertyMapping: z.array(CustomPropertyMappingSchema).optional(),
 		});
 
-		const { schema } = createSchema(TestSchema, "complex", mongoose.connection);
+		const { schema } = createSchema(TestSchema, "complex", connection);
 		expect(schema.obj.customPropertyMapping).toBeDefined();
 		if (!schema.obj.customPropertyMapping) return;
 		const customPropertyMapping = (schema.obj.customPropertyMapping as SchemaDefinition[])[0];
@@ -62,7 +53,7 @@ describe("Nullable Schemas", () => {
 			deletedAt: z.string().optional().nullable(),
 		});
 
-		const { schema } = createSchema(NullableSchema, "nullable", mongoose.connection);
+		const { schema } = createSchema(NullableSchema, "nullable", connection);
 		expect(schema.obj.deletedAt).toEqual({ default: null, type: String });
 	});
 
@@ -71,7 +62,7 @@ describe("Nullable Schemas", () => {
 			deletedAt: z.string().nullable().optional(),
 		});
 
-		const { schema } = createSchema(NullableSchema, "nullable-optional", mongoose.connection);
+		const { schema } = createSchema(NullableSchema, "nullable-optional", connection);
 		expect(schema.obj.deletedAt).toEqual({ default: null, type: String });
 	});
 });
@@ -86,7 +77,7 @@ describe("Native Enums", () => {
 			useCase: z.nativeEnum(UseCase),
 		});
 
-		const { schema } = createSchema(NativeEnumSchema, "native-enum", mongoose.connection);
+		const { schema } = createSchema(NativeEnumSchema, "native-enum", connection);
 		expect(schema.obj.useCase).toEqual({ enum: ["edit", "readOnly"], type: String });
 	});
 });
