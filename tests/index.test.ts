@@ -1,4 +1,5 @@
 import type { Connection, Schema } from "mongoose";
+import { Types } from "mongoose";
 import type { MockedObject } from "vitest";
 import { describe, expect, it, vi } from "vitest";
 import { z } from "zod";
@@ -9,7 +10,11 @@ describe("Creating schema", () => {
 	const connection: MockedObject<Connection> = vi.mockObject({
 		model: vi.fn((_name: string, schema: Schema) => ({
 			create: vi.fn((doc: Record<string, string>) => {
-				const result: Record<string, string> = { _id: "123456789012345678901234", ...doc };
+				// eslint-disable-next-line @typescript-eslint/no-explicit-any
+				const result: Record<string, any> = {
+					_id: new Types.ObjectId(),
+					...doc,
+				};
 				// Apply default values from the schema
 				for (const [key, value] of Object.entries(schema.obj)) {
 					if (typeof value === "object" && value) {
