@@ -3,7 +3,7 @@ import type { MockedObject } from "vitest";
 import { describe, expect, it, vi } from "vitest";
 import { z } from "zod";
 
-import { createSchema } from "../src";
+import { createSchema } from "../src/index.js";
 
 const connection: MockedObject<Connection> = vi.mockObject({
 	model: vi.fn(),

@@ -3,7 +3,7 @@ import { Schema, SchemaTypes } from "mongoose";
 import type { z, ZodObject, ZodRawShape } from "zod";
 import { ZodType } from "zod";
 
-import { isZodArray, isZodDefault, isZodEnum, isZodNullable, isZodObject, isZodOptional } from "./typeGuards";
+import { isZodArray, isZodDefault, isZodEnum, isZodNullable, isZodObject, isZodOptional } from "./typeGuards.js";
 
 /**
  * Represents a valid type for a Mongoose schema field definition. This is a recursive type that handles all possible
