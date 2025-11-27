@@ -1,37 +1,33 @@
-import mongoose from "mongoose";
+import type { Connection, Schema } from "mongoose";
+import { Types } from "mongoose";
+import type { MockedObject } from "vitest";
 import { describe, expect, it, vi } from "vitest";
 import { z } from "zod";
 
 import { createSchema } from "../src";
 
-vi.mock("mongoose", () => {
-	return {
-		default: {
-			connection: {
-				model: vi.fn((_name, schema) => ({
-					create: vi.fn((doc) => {
-						const result = { _id: "123456789012345678901234", ...doc };
-						// Apply default values from the schema
-						for (const [key, value] of Object.entries(schema.obj)) {
-							if (typeof value === "object" && value) {
-								if ("default" in value && value.default !== undefined && result[key] === undefined) {
-									result[key] = typeof value.default === "function" ? value.default() : value.default;
-								}
-							}
-						}
-						return Promise.resolve(result);
-					}),
-				})),
-			},
-		},
-		Schema: vi.fn((schemaDefinition) => ({
-			obj: schemaDefinition, // Store the schema definition for access
-		})),
-		SchemaTypes: { Mixed: {} },
-	};
-});
-
 describe("Creating schema", () => {
+	const connection: MockedObject<Connection> = vi.mockObject({
+		model: vi.fn((_name: string, schema: Schema) => ({
+			create: vi.fn((doc: Record<string, string>) => {
+				// eslint-disable-next-line @typescript-eslint/no-explicit-any
+				const result: Record<string, any> = {
+					_id: new Types.ObjectId(),
+					...doc,
+				};
+				// Apply default values from the schema
+				for (const [key, value] of Object.entries(schema.obj)) {
+					if (typeof value === "object" && value) {
+						if ("default" in value && value.default !== undefined && result[key] === undefined) {
+							// eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-assignment
+							result[key] = typeof value.default === "function" ? value.default() : value.default;
+						}
+					}
+				}
+				return Promise.resolve(result);
+			}),
+		})),
+	} as unknown as Connection);
 	it("should create a schema from a flat object with only primitives", async () => {
 		const { model, schema } = createSchema(
 			z.object({
@@ -41,7 +37,7 @@ describe("Creating schema", () => {
 				name: z.string(),
 			}),
 			"flat",
-			mongoose.connection,
+			connection,
 		);
 		expect(schema).toBeDefined();
 		expect(model).toBeDefined();
@@ -63,7 +59,7 @@ describe("Creating schema", () => {
 				name: z.string().default("Bob"),
 			}),
 			"defaults",
-			mongoose.connection,
+			connection,
 		);
 		expect(schema).toBeDefined();
 		expect(model).toBeDefined();
@@ -84,7 +80,7 @@ describe("Creating schema", () => {
 				name: z.string().optional().default("Bob"),
 			}),
 			"optional",
-			mongoose.connection,
+			connection,
 		);
 		expect(schema).toBeDefined();
 		expect(model).toBeDefined();
@@ -108,7 +104,7 @@ describe("Creating schema", () => {
 		});
 
 		it("Shouldn't make a model if the name is missing", () => {
-			const result = createSchema(z.object({}), "", mongoose.connection);
+			const result = createSchema(z.object({}), "", connection);
 			expect(result.model).toBeFalsy();
 		});
 	});
@@ -118,7 +114,7 @@ describe("Creating schema", () => {
 			const obj = z.object({
 				items: z.array(z.string()),
 			});
-			const { schema } = createSchema(obj, "array", mongoose.connection);
+			const { schema } = createSchema(obj, "array", connection);
 			expect(schema.obj.items).toEqual([String]);
 		});
 
@@ -131,7 +127,7 @@ describe("Creating schema", () => {
 					}),
 				),
 			});
-			const { schema } = createSchema(obj, "array", mongoose.connection);
+			const { schema } = createSchema(obj, "array", connection);
 			if (!Array.isArray(schema.obj.items)) {
 				throw new Error("Expected items to be an array");
 			}
@@ -154,7 +150,7 @@ describe("Creating schema", () => {
 				}),
 				name: z.string(),
 			});
-			const { model, schema } = createSchema(obj, "nested", mongoose.connection);
+			const { model, schema } = createSchema(obj, "nested", connection);
 			expect(schema).toBeDefined();
 			expect(model).toBeDefined();
 			const result = await model.create({
@@ -174,7 +170,7 @@ describe("Creating schema", () => {
 		const obj = z.object({
 			salutation: z.union([z.string(), z.literal("Dr.")]),
 		});
-		const { model } = createSchema(obj, "union", mongoose.connection);
+		const { model } = createSchema(obj, "union", connection);
 		it("Should be able to handle literals", async () => {
 			const result = await model.create({
 				salutation: "Dr.",
