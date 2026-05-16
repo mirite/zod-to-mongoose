@@ -836,7 +836,7 @@ __metadata:
     vitest: "npm:^4.1.6"
     zod: "npm:^4.4.3"
   peerDependencies:
-    mongoose: ^8
+    mongoose: ^9
     zod: ^4
   languageName: unknown
   linkType: soft
