@@ -1,9 +1,9 @@
-import type { Connection, Schema, SchemaDefinition } from "mongoose";
+import type { Connection, SchemaDefinition } from "mongoose";
 import type { MockedObject } from "vitest";
 import { describe, expect, it, vi } from "vitest";
 import { z } from "zod";
 
-import { createSchema } from "../src";
+import { createSchema } from "../src/index.js";
 
 const connection: MockedObject<Connection> = vi.mockObject({
 	model: vi.fn(),
@@ -29,6 +29,9 @@ describe("Complex Schemas", () => {
 		expect(schema.obj.customPropertyMapping).toBeDefined();
 		if (!schema.obj.customPropertyMapping) return;
 		const customPropertyMapping = (schema.obj.customPropertyMapping as SchemaDefinition[])[0];
+		if (!customPropertyMapping) {
+			throw new Error("customPropertyMapping schema is not defined");
+		}
 		expect(customPropertyMapping.type).toEqual({ enum: ["text", "enum-single", "enum-multi"], type: String });
 		expect(customPropertyMapping.useCase).toEqual({ enum: ["edit", "readOnly"], type: String });
 	});

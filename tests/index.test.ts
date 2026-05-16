@@ -4,7 +4,7 @@ import type { MockedObject } from "vitest";
 import { describe, expect, it, vi } from "vitest";
 import { z } from "zod";
 
-import { createSchema } from "../src";
+import { createSchema } from "../src/index.js";
 
 describe("Creating schema", () => {
 	const connection: MockedObject<Connection> = vi.mockObject({
@@ -133,6 +133,9 @@ describe("Creating schema", () => {
 			}
 
 			const subSchema = schema.obj.items[0];
+			if (typeof subSchema !== "object" || subSchema === null) {
+				throw new Error("Expected subschema to be an object");
+			}
 			if (!("name" in subSchema)) throw new Error("Expected name to be in subschema");
 			expect(subSchema.name).toBe(String);
 			if (!("value" in subSchema)) throw new Error("Expected name to be in subschema");
