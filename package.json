@@ -1,6 +1,6 @@
 {
 	"name": "@mirite/zod-to-mongoose",
-	"version": "0.4.1",
+	"version": "0.4.2",
 	"description": "Package for creating mongoose schemas out of Zod schemas for type safety, and removing duplicate effort.",
 	"keywords": [
 		"zod",
