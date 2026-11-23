@@ -167,6 +167,21 @@ describe("Creating schema", () => {
 			expect(String(result._id).length).toBe(24);
 			expect(result.address.street).toBe("123 Main St");
 		});
+		it("Should evaluate schema at document creation", async () => {
+			const { model } = createSchema(
+				z.object({
+					createdAt: z.date().default(() => new Date()),
+					items: z.array(z.object({ qty: z.number(), type: z.string() })),
+				}),
+				"createdAtTest",
+				connection,
+			);
+			const a = await model.create({ items: [{ qty: 2, type: "book" }] });
+
+			await new Promise((r) => setTimeout(r, 30));
+			const b = await model.create({ items: [] });
+			expect(a.createdAt.getTime()).not.toBeCloseTo(b.createdAt.getTime());
+		});
 	});
 
 	describe("Unions", () => {
