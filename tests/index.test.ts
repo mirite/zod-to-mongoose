@@ -107,10 +107,10 @@ describe("Creating schema", () => {
 				items: z.array(z.string()),
 			});
 			const { schema } = createSchema(obj, "array", connection);
-			expect(schema.obj.items).toEqual([String]);
+			expect(schema.obj.items).toEqual([{ type: String }]);
 		});
 
-		it("should handle arrays of objects", () => {
+		it("should handle arrays of objects", async () => {
 			const obj = z.object({
 				items: z.array(
 					z.object({
@@ -119,7 +119,7 @@ describe("Creating schema", () => {
 					}),
 				),
 			});
-			const { schema } = createSchema(obj, "array", connection);
+			const { model, schema } = createSchema(obj, "array", connection);
 			if (!Array.isArray(schema.obj.items)) {
 				throw new Error("Expected items to be an array");
 			}
@@ -129,9 +129,11 @@ describe("Creating schema", () => {
 				throw new Error("Expected subschema to be an object");
 			}
 			if (!("name" in subSchema)) throw new Error("Expected name to be in subschema");
-			expect(subSchema.name).toBe(String);
+			expect(subSchema.name).toEqual({ type: String });
 			if (!("value" in subSchema)) throw new Error("Expected name to be in subschema");
-			expect(subSchema.value).toBe(Number);
+			expect(subSchema.value).toEqual({ type: Number });
+			const result = await model.create({ items: [{ name: "a", value: 0 }] });
+			expect(result.items).containSubset([{ name: "a", value: 0 }]);
 		});
 	});
 
