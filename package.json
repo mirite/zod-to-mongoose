@@ -45,6 +45,7 @@
 		"@vitest/coverage-v8": "^5.1.1",
 		"@vitest/ui": "^5.1.1",
 		"eslint": "^10.15.0",
+		"mongodb-memory-server": "^11.4.0",
 		"mongoose": "^9.13.0",
 		"prettier": "^3.8.3",
 		"tsup": "^9.0.0",
