@@ -1,33 +1,25 @@
-import type { Connection, Schema } from "mongoose";
-import { Types } from "mongoose";
-import type { MockedObject } from "vitest";
-import { describe, expect, it, vi } from "vitest";
+import { MongoMemoryServer } from "mongodb-memory-server";
+import mongoose from "mongoose";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { z } from "zod";
 
 import { createSchema } from "../src/index.js";
 
 describe("Creating schema", () => {
-	const connection: MockedObject<Connection> = vi.mockObject({
-		model: vi.fn((_name: string, schema: Schema) => ({
-			create: vi.fn((doc: Record<string, string>) => {
-				// eslint-disable-next-line @typescript-eslint/no-explicit-any
-				const result: Record<string, any> = {
-					_id: new Types.ObjectId(),
-					...doc,
-				};
-				// Apply default values from the schema
-				for (const [key, value] of Object.entries(schema.obj)) {
-					if (typeof value === "object" && value) {
-						if ("default" in value && value.default !== undefined && result[key] === undefined) {
-							// eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-assignment
-							result[key] = typeof value.default === "function" ? value.default() : value.default;
-						}
-					}
-				}
-				return Promise.resolve(result);
-			}),
-		})),
-	} as unknown as Connection);
+	let mongoServer: MongoMemoryServer;
+	let connection: mongoose.Connection;
+
+	beforeEach(async () => {
+		mongoServer = await MongoMemoryServer.create();
+		const uri = mongoServer.getUri();
+		connection = await mongoose.createConnection(uri).asPromise();
+	});
+
+	afterEach(async () => {
+		await connection.close();
+		await mongoServer.stop();
+	});
+
 	it("should create a schema from a flat object with only primitives", async () => {
 		const { model, schema } = createSchema(
 			z.object({
@@ -115,10 +107,10 @@ describe("Creating schema", () => {
 				items: z.array(z.string()),
 			});
 			const { schema } = createSchema(obj, "array", connection);
-			expect(schema.obj.items).toEqual([String]);
+			expect(schema.obj.items).toEqual([{ type: String }]);
 		});
 
-		it("should handle arrays of objects", () => {
+		it("should handle arrays of objects", async () => {
 			const obj = z.object({
 				items: z.array(
 					z.object({
@@ -127,7 +119,7 @@ describe("Creating schema", () => {
 					}),
 				),
 			});
-			const { schema } = createSchema(obj, "array", connection);
+			const { model, schema } = createSchema(obj, "array", connection);
 			if (!Array.isArray(schema.obj.items)) {
 				throw new Error("Expected items to be an array");
 			}
@@ -137,9 +129,11 @@ describe("Creating schema", () => {
 				throw new Error("Expected subschema to be an object");
 			}
 			if (!("name" in subSchema)) throw new Error("Expected name to be in subschema");
-			expect(subSchema.name).toBe(String);
+			expect(subSchema.name).toEqual({ type: String });
 			if (!("value" in subSchema)) throw new Error("Expected name to be in subschema");
-			expect(subSchema.value).toBe(Number);
+			expect(subSchema.value).toEqual({ type: Number });
+			const result = await model.create({ items: [{ name: "a", value: 0 }] });
+			expect(result.items).containSubset([{ name: "a", value: 0 }]);
 		});
 	});
 
@@ -167,14 +161,29 @@ describe("Creating schema", () => {
 			expect(String(result._id).length).toBe(24);
 			expect(result.address.street).toBe("123 Main St");
 		});
+		it("Should evaluate schema at document creation", async () => {
+			const { model } = createSchema(
+				z.object({
+					createdAt: z.date().default(() => new Date()),
+					items: z.array(z.object({ qty: z.number(), type: z.string() })),
+				}),
+				"createdAtTest",
+				connection,
+			);
+			const a = await model.create({ items: [{ qty: 2, type: "book" }] });
+
+			await new Promise((r) => setTimeout(r, 30));
+			const b = await model.create({ items: [] });
+			expect(a.createdAt.getTime()).not.toBeCloseTo(b.createdAt.getTime());
+		});
 	});
 
 	describe("Unions", () => {
 		const obj = z.object({
 			salutation: z.union([z.string(), z.literal("Dr.")]),
 		});
-		const { model } = createSchema(obj, "union", connection);
 		it("Should be able to handle literals", async () => {
+			const { model } = createSchema(obj, "union", connection);
 			const result = await model.create({
 				salutation: "Dr.",
 			});
@@ -183,6 +192,7 @@ describe("Creating schema", () => {
 		});
 
 		it("Should be able to handle customs", async () => {
+			const { model } = createSchema(obj, "union", connection);
 			const result2 = await model.create({
 				salutation: "Custom",
 			});

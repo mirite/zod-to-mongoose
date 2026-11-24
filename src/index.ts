@@ -55,7 +55,7 @@ export function createSchema<T extends ZodRawShape>(
  */
 function convertField(fieldName: string, zodField: ZodType): MongooseSchemaType {
 	const unwrappedData = unwrapType(zodField);
-	let coreType: MongooseSchemaType | undefined;
+	let result: MongooseSchemaType = {};
 	switch (unwrappedData.definition.type) {
 		case "array": {
 			if (!isZodArray(unwrappedData.definition))
@@ -71,17 +71,17 @@ function convertField(fieldName: string, zodField: ZodType): MongooseSchemaType 
 					}
 					convertedShape[key] = convertField(key, nestedField);
 				}
-				coreType = [convertedShape];
+				result = [convertedShape];
 			} else {
-				coreType = [convertField(fieldName, elementType)];
+				result = [convertField(fieldName, elementType)];
 			}
 			break;
 		}
 		case "boolean":
-			coreType = Boolean;
+			result.type = Boolean;
 			break;
 		case "date":
-			coreType = Date;
+			result.type = Date;
 			break;
 		case "default":
 			break;
@@ -89,65 +89,41 @@ function convertField(fieldName: string, zodField: ZodType): MongooseSchemaType 
 			if (!isZodEnum(unwrappedData.definition))
 				throw new TypeError(`Expected ${fieldName} to be of type ZodEnum`);
 			const enumType = unwrappedData.definition;
-			coreType = {
-				enum: enumType.options,
-				type: String,
-			};
+			result.enum = enumType.options;
+			result.type = String;
 			break;
 		}
 		case "number":
-			coreType = Number;
+			result.type = Number;
 			break;
 		case "object":
 			break;
 		case "string":
-			coreType = String;
+			result.type = String;
 			break;
 		case "union":
-			coreType = SchemaTypes.Mixed;
+			result.type = SchemaTypes.Mixed;
 			break;
 		default:
 			throw new TypeError(`Unsupported type: ${fieldName}`);
 	}
 	if (isZodObject(unwrappedData.definition)) {
-		coreType = createSchema(unwrappedData.definition);
+		result.type = createSchema(unwrappedData.definition);
 	}
-	if (coreType === undefined) {
+	if (result.type === undefined && !Array.isArray(result)) {
 		throw new TypeError(`Could not determine Mongoose type for Zod type: ${fieldName}`);
 	}
 
 	const hasDefaultValue = unwrappedData.defaultValue !== undefined;
 
 	if (unwrappedData.nullable && !hasDefaultValue) {
-		return {
-			default: null,
-			type: coreType,
-		};
+		result.default = null;
 	}
 
 	if (hasDefaultValue) {
-		return {
-			default: unwrappedData.defaultValue,
-			type: coreType,
-		};
+		result.default = unwrappedData.defaultValue;
 	}
-	return coreType;
-}
-
-/**
- * Gets the valid members of an enum.
- *
- * @param The Enum.
- * @returns The valid members.
- */
-function getValidEnumValues(obj: { [s: string]: unknown }): (number | string)[] {
-	const validKeys = Object.keys(obj).filter((k) => typeof obj[k] === "number" || typeof obj[k] === "string");
-	const filtered: { [s: string]: unknown } = {};
-	for (const k of validKeys) {
-		filtered[k] = obj[k];
-	}
-
-	return Object.values(filtered).filter((v) => typeof v === "string" || typeof v === "number");
+	return result;
 }
 
 /**
@@ -174,7 +150,8 @@ function unwrapType(data: ZodType): {
 			optional = true;
 		}
 		if (isZodDefault(definition)) {
-			defaultValue = definition.def.defaultValue;
+			const descriptor = Object.getOwnPropertyDescriptor(definition.def, "defaultValue");
+			defaultValue = descriptor.get?.bind(this);
 		}
 		definition = definition.def.innerType;
 	}

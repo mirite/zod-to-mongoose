@@ -1,6 +1,6 @@
 {
 	"name": "@mirite/zod-to-mongoose",
-	"version": "0.4.2",
+	"version": "0.4.3",
 	"description": "Package for creating mongoose schemas out of Zod schemas for type safety, and removing duplicate effort.",
 	"keywords": [
 		"zod",
@@ -40,22 +40,24 @@
 		"test:watch": "vitest --ui --coverage"
 	},
 	"devDependencies": {
-		"@microsoft/api-extractor": "^7.58.7",
-		"@mirite/eslint-config-mirite": "^2.1.1",
-		"@vitest/coverage-v8": "^4.1.6",
-		"@vitest/ui": "^4.1.6",
-		"eslint": "^10.4.0",
-		"mongoose": "^9.6.2",
+		"@microsoft/api-extractor": "^7.60.1",
+		"@mirite/eslint-config-mirite": "^2.1.2",
+		"@vitest/coverage-v8": "^5.1.1",
+		"@vitest/ui": "^5.1.1",
+		"eslint": "^10.15.0",
+		"mongodb-memory-server": "^11.4.0",
+		"mongoose": "^9.13.0",
 		"prettier": "^3.8.3",
-		"tsup": "^8.5.1",
+		"tsup": "^9.0.0",
 		"typescript": "^6.0.3",
-		"vitest": "^4.1.6",
-		"zod": "^4.4.3"
+		"vite": "^8.3.8",
+		"vitest": "^5.1.1",
+		"zod": "^4.6.7"
 	},
 	"peerDependencies": {
 		"mongoose": "^9",
 		"zod": "^4"
 	},
-	"packageManager": "yarn@4.12.0",
+	"packageManager": "yarn@4.19.0",
 	"issues": "https://github.com/mirite/zod-to-mongoose/issues"
 }
