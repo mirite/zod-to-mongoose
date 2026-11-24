@@ -135,22 +135,6 @@ function convertField(fieldName: string, zodField: ZodType): MongooseSchemaType 
 }
 
 /**
- * Gets the valid members of an enum.
- *
- * @param The Enum.
- * @returns The valid members.
- */
-function getValidEnumValues(obj: { [s: string]: unknown }): (number | string)[] {
-	const validKeys = Object.keys(obj).filter((k) => typeof obj[k] === "number" || typeof obj[k] === "string");
-	const filtered: { [s: string]: unknown } = {};
-	for (const k of validKeys) {
-		filtered[k] = obj[k];
-	}
-
-	return Object.values(filtered).filter((v) => typeof v === "string" || typeof v === "number");
-}
-
-/**
  * Takes a complex type and returns the inner type definition along with the default if present.
  *
  * @param data The type data to unwrap.
@@ -174,7 +158,8 @@ function unwrapType(data: ZodType): {
 			optional = true;
 		}
 		if (isZodDefault(definition)) {
-			defaultValue = definition.def.defaultValue;
+			const descriptor = Object.getOwnPropertyDescriptor(definition.def, "defaultValue");
+			defaultValue = descriptor.get?.bind(this);
 		}
 		definition = definition.def.innerType;
 	}
